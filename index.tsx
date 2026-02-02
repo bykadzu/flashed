@@ -1,0 +1,1366 @@
+
+/**
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
+*/
+
+//Vibe coded by ammaar@google.com
+
+import { GoogleGenAI } from '@google/genai';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import ReactDOM from 'react-dom/client';
+
+import { Artifact, Session, ComponentVariation, LayoutOption, BrandKit, Project } from './types';
+import { INITIAL_PLACEHOLDERS } from './constants';
+import { generateId } from './utils';
+
+import DottedGlowBackground from './components/DottedGlowBackground';
+import ArtifactCard from './components/ArtifactCard';
+import SideDrawer from './components/SideDrawer';
+import ImageCropper from './components/ImageCropper';
+import { 
+    ThinkingIcon, 
+    CodeIcon, 
+    SparklesIcon, 
+    ArrowLeftIcon, 
+    ArrowRightIcon, 
+    ArrowUpIcon, 
+    GridIcon,
+    LinkIcon,
+    UploadIcon,
+    XIcon,
+    HistoryIcon,
+    DownloadIcon,
+    PublishIcon,
+    GlobeIcon,
+    ShareIcon,
+    PaletteIcon,
+    FolderIcon,
+    CloneIcon,
+    TemplateIcon,
+    ChartIcon
+} from './components/Icons';
+import PublishModal from './components/PublishModal';
+import ShareModal from './components/ShareModal';
+import RefineInput from './components/RefineInput';
+import BrandKitEditor from './components/BrandKitEditor';
+import ProjectManager from './components/ProjectManager';
+import TemplateLibrary from './components/TemplateLibrary';
+import AnalyticsDashboard from './components/AnalyticsDashboard';
+
+function App() {
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [currentSessionIndex, setCurrentSessionIndex] = useState<number>(-1);
+  const [focusedArtifactIndex, setFocusedArtifactIndex] = useState<number | null>(null);
+  
+  const [inputValue, setInputValue] = useState<string>('');
+  const [urlValue, setUrlValue] = useState<string>('');
+  const [showUrlInput, setShowUrlInput] = useState<boolean>(false);
+  
+  // Image State
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [imageToEdit, setImageToEdit] = useState<string | null>(null);
+  const [editMode, setEditMode] = useState<'context' | 'replacement' | null>(null);
+
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [placeholderIndex, setPlaceholderIndex] = useState(0);
+  const [placeholders, setPlaceholders] = useState<string[]>(INITIAL_PLACEHOLDERS);
+  
+  const [drawerState, setDrawerState] = useState<{
+      isOpen: boolean;
+      mode: 'code' | 'variations' | 'history' | null;
+      title: string;
+      data: any; 
+  }>({ isOpen: false, mode: null, title: '', data: null });
+
+  const [componentVariations, setComponentVariations] = useState<ComponentVariation[]>([]);
+
+  // Publish Modal State
+  const [isPublishModalOpen, setIsPublishModalOpen] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
+  
+  // Refinement State
+  const [isRefining, setIsRefining] = useState(false);
+  
+  // Clone Mode State
+  const [cloneMode, setCloneMode] = useState(false);
+  
+  // Template Library State
+  const [isTemplateLibraryOpen, setIsTemplateLibraryOpen] = useState(false);
+  
+  // Analytics State
+  const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
+  
+  // Brand Kit State
+  const [brandKits, setBrandKits] = useState<BrandKit[]>([]);
+  const [selectedBrandKit, setSelectedBrandKit] = useState<BrandKit | null>(null);
+  const [isBrandKitEditorOpen, setIsBrandKitEditorOpen] = useState(false);
+  const [editingBrandKit, setEditingBrandKit] = useState<BrandKit | null>(null);
+  const [showBrandKitDropdown, setShowBrandKitDropdown] = useState(false);
+  
+  // Project State
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [currentProject, setCurrentProject] = useState<Project | null>(null);
+  const [isProjectManagerOpen, setIsProjectManagerOpen] = useState(false);
+
+  // Image Replacement State
+  const [pendingImageReplacement, setPendingImageReplacement] = useState<{artifactId: string, imgId: string} | null>(null);
+  const replaceInputRef = useRef<HTMLInputElement>(null);
+
+  const inputRef = useRef<HTMLInputElement>(null);
+  const urlInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const gridScrollRef = useRef<HTMLDivElement>(null);
+
+  // Load from LocalStorage
+  useEffect(() => {
+      try {
+          const saved = localStorage.getItem('flash_ui_sessions');
+          if (saved) {
+              const parsed = JSON.parse(saved);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                  setSessions(parsed);
+                  setCurrentSessionIndex(parsed.length - 1);
+              }
+          }
+          
+          // Load brand kits
+          const savedBrandKits = localStorage.getItem('flash_ui_brand_kits');
+          if (savedBrandKits) {
+              const parsed = JSON.parse(savedBrandKits);
+              if (Array.isArray(parsed)) {
+                  setBrandKits(parsed);
+              }
+          }
+          
+          // Load projects
+          const savedProjects = localStorage.getItem('flash_ui_projects');
+          if (savedProjects) {
+              const parsed = JSON.parse(savedProjects);
+              if (Array.isArray(parsed)) {
+                  setProjects(parsed);
+              }
+          }
+      } catch (e) {
+          console.warn("Failed to load sessions", e);
+      }
+  }, []);
+
+  // Save to LocalStorage
+  useEffect(() => {
+      if (sessions.length > 0) {
+          try {
+              // Limit to last 10 to avoid quota issues
+              const toSave = sessions.slice(-10);
+              localStorage.setItem('flash_ui_sessions', JSON.stringify(toSave));
+          } catch (e) {
+              console.warn("Failed to save sessions (quota exceeded?)", e);
+          }
+      }
+  }, [sessions]);
+
+  // Save brand kits to LocalStorage
+  useEffect(() => {
+      try {
+          localStorage.setItem('flash_ui_brand_kits', JSON.stringify(brandKits));
+      } catch (e) {
+          console.warn("Failed to save brand kits", e);
+      }
+  }, [brandKits]);
+
+  // Save projects to LocalStorage
+  useEffect(() => {
+      try {
+          localStorage.setItem('flash_ui_projects', JSON.stringify(projects));
+      } catch (e) {
+          console.warn("Failed to save projects", e);
+      }
+  }, [projects]);
+
+  // Handle Image Click Messages from Iframe
+  useEffect(() => {
+      const handleMessage = (event: MessageEvent) => {
+          if (event.data && event.data.type === 'IMAGE_CLICK') {
+              const { artifactId, imgId } = event.data;
+              setPendingImageReplacement({ artifactId, imgId });
+              replaceInputRef.current?.click();
+          }
+      };
+      
+      window.addEventListener('message', handleMessage);
+      return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
+  const handleReplacementImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (file && pendingImageReplacement) {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+              const base64 = reader.result as string;
+              setImageToEdit(base64);
+              setEditMode('replacement');
+          };
+          reader.readAsDataURL(file);
+      }
+      // Reset input
+      if (replaceInputRef.current) replaceInputRef.current.value = '';
+  };
+
+  const handleContextImageSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (file) {
+          const reader = new FileReader();
+          reader.onloadend = () => {
+              const base64 = reader.result as string;
+              setImageToEdit(base64);
+              setEditMode('context');
+          };
+          reader.readAsDataURL(file);
+      }
+      if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const onCropComplete = (croppedBase64: string) => {
+      if (editMode === 'context') {
+          setSelectedImage(croppedBase64);
+      } else if (editMode === 'replacement' && pendingImageReplacement) {
+          // Send back to the specific iframe
+          const iframeId = `iframe-${pendingImageReplacement.artifactId}`;
+          const iframe = document.getElementById(iframeId) as HTMLIFrameElement;
+          
+          if (iframe && iframe.contentWindow) {
+              iframe.contentWindow.postMessage({
+                  type: 'UPDATE_IMAGE',
+                  imgId: pendingImageReplacement.imgId,
+                  src: croppedBase64
+              }, '*');
+          }
+          setPendingImageReplacement(null);
+      }
+      setImageToEdit(null);
+      setEditMode(null);
+  };
+
+  const onCropCancel = () => {
+      setImageToEdit(null);
+      setEditMode(null);
+      setPendingImageReplacement(null);
+  };
+
+  const handleDownload = () => {
+    if (focusedArtifactIndex === null) return;
+    const currentSession = sessions[currentSessionIndex];
+    if (!currentSession) return;
+    const artifact = currentSession.artifacts[focusedArtifactIndex];
+    
+    const blob = new Blob([artifact.html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `flash-ui-${artifact.id}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  useEffect(() => {
+      inputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    if (showUrlInput && urlInputRef.current) {
+        urlInputRef.current.focus();
+    }
+  }, [showUrlInput]);
+
+  // Fix for mobile: reset scroll when focusing an item to prevent "overscroll" state
+  useEffect(() => {
+    if (focusedArtifactIndex !== null && window.innerWidth <= 1024) {
+        if (gridScrollRef.current) {
+            gridScrollRef.current.scrollTop = 0;
+        }
+        window.scrollTo(0, 0);
+    }
+  }, [focusedArtifactIndex]);
+
+  // Cycle placeholders
+  useEffect(() => {
+      const interval = setInterval(() => {
+          setPlaceholderIndex(prev => (prev + 1) % placeholders.length);
+      }, 3000);
+      return () => clearInterval(interval);
+  }, [placeholders.length]);
+
+  // Dynamic placeholder generation on load
+  useEffect(() => {
+      const fetchDynamicPlaceholders = async () => {
+          try {
+              const apiKey = process.env.API_KEY;
+              if (!apiKey) return;
+              const ai = new GoogleGenAI({ apiKey });
+              const response = await ai.models.generateContent({
+                  model: 'gemini-3-flash-preview',
+                  contents: { 
+                      role: 'user', 
+                      parts: [{ 
+                          text: 'Generate 10 sophisticated B2B web design prompts (e.g. "Enterprise logistics dashboard", "AI-driven legal assistant"). Return ONLY a raw JSON array of strings.' 
+                      }] 
+                  }
+              });
+              const text = response.text || '[]';
+              const jsonMatch = text.match(/\[[\s\S]*\]/);
+              if (jsonMatch) {
+                  const newPlaceholders = JSON.parse(jsonMatch[0]);
+                  if (Array.isArray(newPlaceholders) && newPlaceholders.length > 0) {
+                      const shuffled = newPlaceholders.sort(() => 0.5 - Math.random()).slice(0, 10);
+                      setPlaceholders(prev => [...prev, ...shuffled]);
+                  }
+              }
+          } catch (e) {
+              console.warn("Silently failed to fetch dynamic placeholders", e);
+          }
+      };
+      setTimeout(fetchDynamicPlaceholders, 1000);
+  }, []);
+
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setInputValue(event.target.value);
+  };
+
+  const clearImage = () => {
+      setSelectedImage(null);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const parseJsonStream = async function* (responseStream: AsyncGenerator<{ text: string }>) {
+      let buffer = '';
+      for await (const chunk of responseStream) {
+          const text = chunk.text;
+          if (typeof text !== 'string') continue;
+          buffer += text;
+          let braceCount = 0;
+          let start = buffer.indexOf('{');
+          while (start !== -1) {
+              braceCount = 0;
+              let end = -1;
+              for (let i = start; i < buffer.length; i++) {
+                  if (buffer[i] === '{') braceCount++;
+                  else if (buffer[i] === '}') braceCount--;
+                  if (braceCount === 0 && i > start) {
+                      end = i;
+                      break;
+                  }
+              }
+              if (end !== -1) {
+                  const jsonString = buffer.substring(start, end + 1);
+                  try {
+                      yield JSON.parse(jsonString);
+                      buffer = buffer.substring(end + 1);
+                      start = buffer.indexOf('{');
+                  } catch (e) {
+                      start = buffer.indexOf('{', start + 1);
+                  }
+              } else {
+                  break; 
+              }
+          }
+      }
+  };
+
+  const handleGenerateVariations = useCallback(async () => {
+    const currentSession = sessions[currentSessionIndex];
+    if (!currentSession || focusedArtifactIndex === null) return;
+    const currentArtifact = currentSession.artifacts[focusedArtifactIndex];
+
+    setIsLoading(true);
+    setComponentVariations([]);
+    setDrawerState({ isOpen: true, mode: 'variations', title: 'Variations', data: currentArtifact.id });
+
+    try {
+        const apiKey = process.env.API_KEY;
+        if (!apiKey) throw new Error("API_KEY is not configured.");
+        const ai = new GoogleGenAI({ apiKey });
+
+        const prompt = `
+You are an Expert UI Designer.
+Generate 3 distinct variations of the following design: "${currentSession.prompt}".
+
+**OBJECTIVE:**
+Create 3 significantly different aesthetic interpretations.
+Do NOT stick to just one style. Explore the range of possibilities (e.g., from Minimalist to Brutalist to Playful).
+
+**VARIATIONS:**
+1. **Variation A**: Focus on Typography and Layout.
+2. **Variation B**: Focus on Color and Depth.
+3. **Variation C**: Focus on a completely different Vibe (e.g. if A is serious, C is playful).
+
+**OUTPUT:**
+Required JSON Output Format (stream ONE object per line):
+\`{ "name": "Variation Name", "html": "..." }\`
+        `.trim();
+
+        const responseStream = await ai.models.generateContentStream({
+            model: 'gemini-3-flash-preview',
+             contents: [{ parts: [{ text: prompt }], role: 'user' }],
+             config: { temperature: 1.1 }
+        });
+
+        for await (const variation of parseJsonStream(responseStream)) {
+            if (variation.name && variation.html) {
+                setComponentVariations(prev => [...prev, variation]);
+            }
+        }
+    } catch (e: any) {
+        console.error("Error generating variations:", e);
+    } finally {
+        setIsLoading(false);
+    }
+  }, [sessions, currentSessionIndex, focusedArtifactIndex]);
+
+  const applyVariation = (html: string) => {
+      if (focusedArtifactIndex === null) return;
+      setSessions(prev => prev.map((sess, i) => 
+          i === currentSessionIndex ? {
+              ...sess,
+              artifacts: sess.artifacts.map((art, j) => 
+                j === focusedArtifactIndex ? { ...art, html, status: 'complete' } : art
+              )
+          } : sess
+      ));
+      setDrawerState(s => ({ ...s, isOpen: false }));
+  };
+
+  const handleShowCode = () => {
+      const currentSession = sessions[currentSessionIndex];
+      if (currentSession && focusedArtifactIndex !== null) {
+          const artifact = currentSession.artifacts[focusedArtifactIndex];
+          setDrawerState({ isOpen: true, mode: 'code', title: 'Source Code', data: artifact.html });
+      }
+  };
+  
+  const handleShowHistory = () => {
+      setDrawerState({ isOpen: true, mode: 'history', title: 'History', data: null });
+  };
+
+  const handleOpenPublishModal = () => {
+      if (focusedArtifactIndex !== null) {
+          setIsPublishModalOpen(true);
+      }
+  };
+
+  const handlePublished = (publishInfo: { url: string; shortId: string }) => {
+      if (focusedArtifactIndex === null) return;
+      
+      setSessions(prev => prev.map((sess, i) => 
+          i === currentSessionIndex ? {
+              ...sess,
+              artifacts: sess.artifacts.map((art, j) => 
+                  j === focusedArtifactIndex ? {
+                      ...art,
+                      publishInfo: {
+                          url: publishInfo.url,
+                          shortId: publishInfo.shortId,
+                          publishedAt: Date.now(),
+                          version: (art.publishInfo?.version || 0) + 1
+                      }
+                  } : art
+              )
+          } : sess
+      ));
+  };
+
+  const handleRefine = useCallback(async (instruction: string) => {
+      const session = sessions[currentSessionIndex];
+      if (focusedArtifactIndex === null || !session || isRefining) return;
+      
+      const artifact = session.artifacts[focusedArtifactIndex];
+      if (!artifact || !artifact.html) return;
+      
+      setIsRefining(true);
+      
+      // Mark the artifact as streaming
+      setSessions(prev => prev.map((sess, i) => 
+          i === currentSessionIndex ? {
+              ...sess,
+              artifacts: sess.artifacts.map((art, j) => 
+                  j === focusedArtifactIndex ? { ...art, status: 'streaming' } : art
+              )
+          } : sess
+      ));
+      
+      try {
+          const apiKey = process.env.API_KEY;
+          if (!apiKey) throw new Error("API_KEY is not configured.");
+          const ai = new GoogleGenAI({ apiKey });
+          
+          const prompt = `
+You are an Expert UI Refiner.
+
+**CURRENT DESIGN:**
+\`\`\`html
+${artifact.html}
+\`\`\`
+
+**REFINEMENT REQUEST:** "${instruction}"
+
+**TASK:**
+Apply the refinement request to the current design. Make focused, targeted changes that address the request while preserving the overall structure and content.
+
+**GUIDELINES:**
+1. Keep all existing content (text, images, sections) unless specifically asked to remove them
+2. Maintain the general layout structure unless the request asks to change it
+3. Focus your changes on what was specifically requested
+4. Ensure the design remains mobile-responsive
+5. Keep all CSS in a <style> tag in the <head>
+
+**OUTPUT:**
+Return ONLY the complete, updated HTML. No explanations or markdown code blocks.
+          `.trim();
+          
+          const responseStream = await ai.models.generateContentStream({
+              model: 'gemini-3-flash-preview',
+              contents: [{ parts: [{ text: prompt }], role: 'user' }],
+              config: { temperature: 0.7 }
+          });
+          
+          let accumulatedHtml = '';
+          for await (const chunk of responseStream) {
+              const text = chunk.text;
+              if (typeof text === 'string') {
+                  accumulatedHtml += text;
+                  setSessions(prev => prev.map((sess, i) => 
+                      i === currentSessionIndex ? {
+                          ...sess,
+                          artifacts: sess.artifacts.map((art, j) => 
+                              j === focusedArtifactIndex ? { ...art, html: accumulatedHtml } : art
+                          )
+                      } : sess
+                  ));
+              }
+          }
+          
+          // Clean up code blocks if present
+          let finalHtml = accumulatedHtml.trim();
+          if (finalHtml.startsWith('```html')) finalHtml = finalHtml.substring(7).trimStart();
+          if (finalHtml.startsWith('```')) finalHtml = finalHtml.substring(3).trimStart();
+          if (finalHtml.endsWith('```')) finalHtml = finalHtml.substring(0, finalHtml.length - 3).trimEnd();
+          
+          setSessions(prev => prev.map((sess, i) => 
+              i === currentSessionIndex ? {
+                  ...sess,
+                  artifacts: sess.artifacts.map((art, j) => 
+                      j === focusedArtifactIndex ? { 
+                          ...art, 
+                          html: finalHtml, 
+                          status: finalHtml ? 'complete' : 'error' 
+                      } : art
+                  )
+              } : sess
+          ));
+          
+      } catch (e: any) {
+          console.error('Refinement error:', e);
+          // Restore original state on error
+          setSessions(prev => prev.map((sess, i) => 
+              i === currentSessionIndex ? {
+                  ...sess,
+                  artifacts: sess.artifacts.map((art, j) => 
+                      j === focusedArtifactIndex ? { ...art, status: 'complete' } : art
+                  )
+              } : sess
+          ));
+      } finally {
+          setIsRefining(false);
+      }
+  }, [focusedArtifactIndex, sessions, currentSessionIndex, isRefining]);
+  
+  const handleHistorySelect = (index: number) => {
+      setCurrentSessionIndex(index);
+      setFocusedArtifactIndex(null);
+      setDrawerState(s => ({ ...s, isOpen: false }));
+  };
+
+  const handleSaveBrandKit = (brandKit: BrandKit) => {
+      setBrandKits(prev => {
+          const existing = prev.findIndex(bk => bk.id === brandKit.id);
+          if (existing >= 0) {
+              const updated = [...prev];
+              updated[existing] = brandKit;
+              return updated;
+          }
+          return [...prev, brandKit];
+      });
+      setSelectedBrandKit(brandKit);
+      setEditingBrandKit(null);
+  };
+
+  const handleDeleteBrandKit = (id: string) => {
+      setBrandKits(prev => prev.filter(bk => bk.id !== id));
+      if (selectedBrandKit?.id === id) {
+          setSelectedBrandKit(null);
+      }
+  };
+
+  const openBrandKitEditor = (brandKit?: BrandKit) => {
+      setEditingBrandKit(brandKit || null);
+      setIsBrandKitEditorOpen(true);
+      setShowBrandKitDropdown(false);
+  };
+
+  const handleSaveProject = (project: Project) => {
+      setProjects(prev => {
+          const existing = prev.findIndex(p => p.id === project.id);
+          if (existing >= 0) {
+              const updated = [...prev];
+              updated[existing] = project;
+              return updated;
+          }
+          return [...prev, project];
+      });
+      setCurrentProject(project);
+      // Auto-select project's brand kit if it has one
+      if (project.brandKit) {
+          setSelectedBrandKit(project.brandKit);
+      }
+  };
+
+  const handleDeleteProject = (id: string) => {
+      setProjects(prev => prev.filter(p => p.id !== id));
+      if (currentProject?.id === id) {
+          setCurrentProject(null);
+      }
+  };
+
+  const handleSelectProject = (project: Project | null) => {
+      setCurrentProject(project);
+      // Auto-select project's brand kit if it has one
+      if (project?.brandKit) {
+          setSelectedBrandKit(project.brandKit);
+      } else if (!project) {
+          // Optionally clear brand kit when clearing project
+      }
+      setIsProjectManagerOpen(false);
+  };
+
+  const handleSendMessage = useCallback(async (manualPrompt?: string) => {
+    const promptToUse = manualPrompt || inputValue;
+    const trimmedInput = promptToUse.trim();
+    const currentUrl = urlValue.trim();
+    
+    if (!trimmedInput || isLoading) return;
+    if (!manualPrompt) {
+        setInputValue('');
+        clearImage();
+    }
+    if (!manualPrompt) setUrlValue(''); // Reset URL after send
+    setShowUrlInput(false);
+
+    setIsLoading(true);
+    const baseTime = Date.now();
+    const sessionId = generateId();
+
+    const placeholderArtifacts: Artifact[] = Array(3).fill(null).map((_, i) => ({
+        id: `${sessionId}_${i}`,
+        styleName: 'Designing...',
+        html: '',
+        status: 'streaming',
+    }));
+
+    const displayPrompt = currentUrl ? `${trimmedInput} (${currentUrl})` : trimmedInput;
+
+    const newSession: Session = {
+        id: sessionId,
+        prompt: displayPrompt,
+        timestamp: baseTime,
+        artifacts: placeholderArtifacts
+    };
+
+    setSessions(prev => [...prev, newSession]);
+    setCurrentSessionIndex(sessions.length); 
+    setFocusedArtifactIndex(null); 
+
+    try {
+        const apiKey = process.env.API_KEY;
+        if (!apiKey) throw new Error("API_KEY is not configured.");
+        const ai = new GoogleGenAI({ apiKey });
+
+        // Phase 1: Determine Styles - UPDATED for Context Awareness
+        const stylePrompt = `
+You are an expert Design Strategist.
+Client Request: "${trimmedInput}".
+${currentUrl ? `Context URL: ${currentUrl}.` : ''}
+${selectedImage ? `Context Image: Attached.` : ''}
+
+**TASK:**
+Analyze the request and determine the 3 most effective and DISTINCT visual styles for this specific use case.
+Do NOT default to "Luxury" or "SaaS" unless the request specifically fits that.
+Think broad: Retro, Brutalist, Playful, Corporate, Minimalist, Industrial, Nature-inspired, etc.
+
+**EXAMPLES:**
+- If "Kindergarten": ["Playful Storybook", "Soft Rounded Pastel", "Bright & Bouncy"]
+- If "Law Firm": ["Trustworthy Serif", "High-Contrast Corporate", "Traditional Navy"]
+- If "Dashboard": ["Linear Dark Mode", "Clean Light Glass", "Data-Dense Industrial"]
+
+Return ONLY a raw JSON array of 3 strings describing the specific vibes.
+        `.trim();
+
+        const tools = currentUrl ? [{ googleSearch: {} }] : [];
+        
+        const styleRequestParts: any[] = [{ text: stylePrompt }];
+        
+        // If an image is selected, add it to the request so Gemini can "see" the vibe
+        if (selectedImage) {
+            const base64Data = selectedImage.split(',')[1];
+            styleRequestParts.push({
+                inlineData: {
+                    mimeType: 'image/jpeg', // Assuming jpeg for simplicity, or extract from string
+                    data: base64Data
+                }
+            });
+        }
+
+        const styleResponse = await ai.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: { role: 'user', parts: styleRequestParts },
+            config: { tools } 
+        });
+
+        let generatedStyles: string[] = [];
+        const styleText = styleResponse.text || '[]';
+        const jsonMatch = styleText.match(/\[[\s\S]*\]/);
+        
+        if (jsonMatch) {
+            try {
+                generatedStyles = JSON.parse(jsonMatch[0]);
+            } catch (e) {
+                console.warn("Failed to parse styles, using fallbacks");
+            }
+        }
+
+        if (!generatedStyles || generatedStyles.length < 3) {
+            generatedStyles = [
+                "Modern Clean",
+                "Bold & Vibrant",
+                "Professional Minimal"
+            ];
+        }
+        generatedStyles = generatedStyles.slice(0, 3);
+
+        setSessions(prev => prev.map(s => {
+            if (s.id !== sessionId) return s;
+            return {
+                ...s,
+                artifacts: s.artifacts.map((art, i) => ({
+                    ...art,
+                    styleName: generatedStyles[i]
+                }))
+            };
+        }));
+
+        // Phase 2: Generate High-Fidelity HTML - UPDATED for Flexibility
+        const generateArtifact = async (artifact: Artifact, styleInstruction: string) => {
+            try {
+                // Build brand kit instruction if one is selected
+                const brandKitInstruction = selectedBrandKit ? `
+**BRAND KIT (MUST USE THESE):**
+- Primary Color: ${selectedBrandKit.primaryColor}
+- Secondary Color: ${selectedBrandKit.secondaryColor}
+- Accent Color: ${selectedBrandKit.accentColor}
+- Font Family: '${selectedBrandKit.fontFamily}' (import from Google Fonts)
+${selectedBrandKit.logoUrl ? `- Logo URL: ${selectedBrandKit.logoUrl}` : ''}
+` : '';
+
+                // Clone mode uses a different prompt focused on replication
+                const isCloning = cloneMode && (currentUrl || selectedImage);
+                
+                const clonePrompt = `
+You are a World-Class Frontend Engineer specializing in pixel-perfect recreations.
+
+**TASK:** Replicate the layout and structure of the reference ${currentUrl ? `website at ${currentUrl}` : 'image provided'}.
+**NEW CONTENT:** "${trimmedInput}"
+
+**CLONE INSTRUCTIONS:**
+1. **Structure:** Match the EXACT layout structure - same sections, same arrangement, same proportions.
+2. **Typography:** Use the same or very similar fonts. Match font sizes and weights.
+3. **Spacing:** Match padding, margins, and gaps as closely as possible.
+4. **Colors:** ${selectedBrandKit ? `Use brand kit colors instead: primary (${selectedBrandKit.primaryColor}), secondary (${selectedBrandKit.secondaryColor}), accent (${selectedBrandKit.accentColor})` : 'Match the original color scheme closely.'}
+5. **Components:** Recreate the same UI components (buttons, cards, navigation style).
+6. **Content:** Replace text/images with content relevant to "${trimmedInput}".
+${brandKitInstruction}
+
+**IMAGES:** Use \`https://image.pollinations.ai/prompt/{description}?width={w}&height={h}&nologo=true\` for images.
+
+**OUTPUT:** Return ONLY the complete, self-contained HTML with embedded CSS. Mobile responsive.
+                `.trim();
+
+                const standardPrompt = `
+You are a World-Class Frontend Engineer.
+Build a COMPLETE, Single Page Website for: "${trimmedInput}".
+
+**CONTEXT:**
+${currentUrl ? `Client URL: ${currentUrl}. Search it.` : ''}
+${selectedImage ? `Refer to the attached image for color palette and visual tone.` : ''}
+${brandKitInstruction}
+
+**TARGET STYLE:** ${styleInstruction}
+
+**DESIGN INSTRUCTIONS:**
+1.  **Typography:** ${selectedBrandKit ? `Use '${selectedBrandKit.fontFamily}' as the primary font. Import it from Google Fonts.` : `Choose a Google Font that PERFECTLY fits the '${styleInstruction}' style. Import it in the CSS. Do NOT default to Inter unless it fits.`}
+2.  **Layout & Structure:** Create a layout that makes sense for a "${trimmedInput}". 
+    - If it's a Landing Page, use sections like Hero, Features, CTA.
+    - If it's a Dashboard, use a Sidebar, Header, and Data Cards.
+    - If it's a Blog, use a Grid of Articles.
+    - If it's a Restaurant, use a Menu section and Gallery.
+3.  **Visuals:** 
+    - Use CSS for creative backgrounds/shapes matching the style (e.g. brutalist borders, soft gradients, retro patterns).
+    - **IMAGES:** Use \`https://image.pollinations.ai/prompt/{description}?width={w}&height={h}&nologo=true\` for realistic photos/illustrations. 
+4.  **Color:** ${selectedBrandKit ? `Use the brand kit colors: primary (${selectedBrandKit.primaryColor}), secondary (${selectedBrandKit.secondaryColor}), and accent (${selectedBrandKit.accentColor}).` : `Strictly follow the '${styleInstruction}' vibe.`}
+
+**TECHNICAL:**
+- Mobile Responsive.
+- Flexbox/Grid.
+- Self-contained HTML/CSS.
+
+Return ONLY RAW HTML.
+                `.trim();
+                
+                const prompt = isCloning ? clonePrompt : standardPrompt;
+          
+                const generationParts: any[] = [{ text: prompt }];
+                if (selectedImage) {
+                     const base64Data = selectedImage.split(',')[1];
+                     generationParts.push({
+                        inlineData: { mimeType: 'image/jpeg', data: base64Data }
+                     });
+                }
+
+                const responseStream = await ai.models.generateContentStream({
+                    model: 'gemini-3-flash-preview',
+                    contents: [{ parts: generationParts, role: "user" }],
+                    config: { tools }
+                });
+
+                let accumulatedHtml = '';
+                for await (const chunk of responseStream) {
+                    const text = chunk.text;
+                    if (typeof text === 'string') {
+                        accumulatedHtml += text;
+                        setSessions(prev => prev.map(sess => 
+                            sess.id === sessionId ? {
+                                ...sess,
+                                artifacts: sess.artifacts.map(art => 
+                                    art.id === artifact.id ? { ...art, html: accumulatedHtml } : art
+                                )
+                            } : sess
+                        ));
+                    }
+                }
+                
+                let finalHtml = accumulatedHtml.trim();
+                // Basic cleanup if the model wraps in code blocks
+                if (finalHtml.startsWith('```html')) finalHtml = finalHtml.substring(7).trimStart();
+                if (finalHtml.startsWith('```')) finalHtml = finalHtml.substring(3).trimStart();
+                if (finalHtml.endsWith('```')) finalHtml = finalHtml.substring(0, finalHtml.length - 3).trimEnd();
+
+                setSessions(prev => prev.map(sess => 
+                    sess.id === sessionId ? {
+                        ...sess,
+                        artifacts: sess.artifacts.map(art => 
+                            art.id === artifact.id ? { ...art, html: finalHtml, status: finalHtml ? 'complete' : 'error' } : art
+                        )
+                    } : sess
+                ));
+
+            } catch (e: any) {
+                console.error('Error generating artifact:', e);
+                setSessions(prev => prev.map(sess => 
+                    sess.id === sessionId ? {
+                        ...sess,
+                        artifacts: sess.artifacts.map(art => 
+                            art.id === artifact.id ? { ...art, html: `<div style="color: #ff6b6b; padding: 20px;">Error: ${e.message}</div>`, status: 'error' } : art
+                        )
+                    } : sess
+                ));
+            }
+        };
+
+        await Promise.all(placeholderArtifacts.map((art, i) => generateArtifact(art, generatedStyles[i])));
+
+    } catch (e) {
+        console.error("Fatal error in generation process", e);
+    } finally {
+        setIsLoading(false);
+        setTimeout(() => inputRef.current?.focus(), 100);
+    }
+  }, [inputValue, urlValue, selectedImage, isLoading, sessions.length]);
+
+  const handleSurpriseMe = () => {
+      const currentPrompt = placeholders[placeholderIndex];
+      setInputValue(currentPrompt);
+      handleSendMessage(currentPrompt);
+  };
+
+  const handleSelectTemplate = (prompt: string) => {
+      setInputValue(prompt);
+      // Focus the input so user can modify if needed
+      setTimeout(() => inputRef.current?.focus(), 100);
+  };
+
+  const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter' && !isLoading) {
+      event.preventDefault();
+      handleSendMessage();
+    } else if (event.key === 'Tab' && !inputValue && !isLoading) {
+        event.preventDefault();
+        setInputValue(placeholders[placeholderIndex]);
+    }
+  };
+
+  const nextItem = useCallback(() => {
+      if (focusedArtifactIndex !== null) {
+          if (focusedArtifactIndex < 2) setFocusedArtifactIndex(focusedArtifactIndex + 1);
+      } else {
+          if (currentSessionIndex < sessions.length - 1) setCurrentSessionIndex(currentSessionIndex + 1);
+      }
+  }, [currentSessionIndex, sessions.length, focusedArtifactIndex]);
+
+  const prevItem = useCallback(() => {
+      if (focusedArtifactIndex !== null) {
+          if (focusedArtifactIndex > 0) setFocusedArtifactIndex(focusedArtifactIndex - 1);
+      } else {
+           if (currentSessionIndex > 0) setCurrentSessionIndex(currentSessionIndex - 1);
+      }
+  }, [currentSessionIndex, focusedArtifactIndex]);
+
+  const isLoadingDrawer = isLoading && drawerState.mode === 'variations' && componentVariations.length === 0;
+
+  const hasStarted = sessions.length > 0 || isLoading;
+  const currentSession = sessions[currentSessionIndex];
+
+  let canGoBack = false;
+  let canGoForward = false;
+
+  if (hasStarted) {
+      if (focusedArtifactIndex !== null) {
+          canGoBack = focusedArtifactIndex > 0;
+          canGoForward = focusedArtifactIndex < (currentSession?.artifacts.length || 0) - 1;
+      } else {
+          canGoBack = currentSessionIndex > 0;
+          canGoForward = currentSessionIndex < sessions.length - 1;
+      }
+  }
+
+  return (
+    <>
+        {/* Hidden File Input for Image Replacement */}
+        <input 
+            type="file" 
+            ref={replaceInputRef} 
+            style={{ display: 'none' }} 
+            accept="image/*"
+            onChange={handleReplacementImageSelect}
+        />
+
+        {imageToEdit && (
+            <ImageCropper 
+                imageSrc={imageToEdit}
+                onCancel={onCropCancel}
+                onComplete={onCropComplete}
+            />
+        )}
+
+        {/* Publish Modal */}
+        {focusedArtifactIndex !== null && currentSession && (
+            <PublishModal
+                isOpen={isPublishModalOpen}
+                onClose={() => setIsPublishModalOpen(false)}
+                artifact={currentSession.artifacts[focusedArtifactIndex]}
+                prompt={currentSession.prompt}
+                onPublished={handlePublished}
+            />
+        )}
+
+        {/* Share/Preview Modal */}
+        {focusedArtifactIndex !== null && currentSession && (
+            <ShareModal
+                isOpen={isShareModalOpen}
+                onClose={() => setIsShareModalOpen(false)}
+                artifact={currentSession.artifacts[focusedArtifactIndex]}
+                prompt={currentSession.prompt}
+            />
+        )}
+
+        {/* Brand Kit Editor */}
+        <BrandKitEditor
+            isOpen={isBrandKitEditorOpen}
+            onClose={() => {
+                setIsBrandKitEditorOpen(false);
+                setEditingBrandKit(null);
+            }}
+            currentBrandKit={editingBrandKit}
+            onSave={handleSaveBrandKit}
+            onDelete={handleDeleteBrandKit}
+        />
+
+        {/* Project Manager */}
+        <ProjectManager
+            isOpen={isProjectManagerOpen}
+            onClose={() => setIsProjectManagerOpen(false)}
+            projects={projects}
+            currentProject={currentProject}
+            brandKits={brandKits}
+            onSaveProject={handleSaveProject}
+            onDeleteProject={handleDeleteProject}
+            onSelectProject={handleSelectProject}
+        />
+
+        {/* Template Library */}
+        <TemplateLibrary
+            isOpen={isTemplateLibraryOpen}
+            onClose={() => setIsTemplateLibraryOpen(false)}
+            onSelectTemplate={handleSelectTemplate}
+        />
+
+        {/* Analytics Dashboard */}
+        {focusedArtifactIndex !== null && currentSession && (
+            <AnalyticsDashboard
+                isOpen={isAnalyticsOpen}
+                onClose={() => setIsAnalyticsOpen(false)}
+                artifact={currentSession.artifacts[focusedArtifactIndex]}
+            />
+        )}
+
+        <SideDrawer 
+            isOpen={drawerState.isOpen} 
+            onClose={() => setDrawerState(s => ({...s, isOpen: false}))} 
+            title={drawerState.title}
+        >
+            {isLoadingDrawer && (
+                 <div className="loading-state">
+                     <ThinkingIcon /> 
+                     Designing variations...
+                 </div>
+            )}
+
+            {drawerState.mode === 'code' && (
+                <pre className="code-block"><code>{drawerState.data}</code></pre>
+            )}
+            
+            {drawerState.mode === 'history' && (
+                <div className="sexy-grid">
+                    {sessions.map((s, i) => (
+                         <div key={s.id} className="sexy-card" onClick={() => handleHistorySelect(i)}>
+                             <div className="sexy-label" style={{ borderTop: 'none', borderBottom: '1px solid var(--glass-border)', background: i === currentSessionIndex ? 'rgba(255,255,255,0.1)' : 'transparent' }}>
+                                 {new Date(s.timestamp).toLocaleTimeString()} - {s.prompt}
+                             </div>
+                         </div>
+                    ))}
+                    {sessions.length === 0 && <div style={{padding: 20, textAlign: 'center', color: '#666'}}>No history yet.</div>}
+                </div>
+            )}
+            
+            {drawerState.mode === 'variations' && (
+                <div className="sexy-grid">
+                    {componentVariations.map((v, i) => (
+                         <div key={i} className="sexy-card" onClick={() => applyVariation(v.html)}>
+                             <div className="sexy-preview">
+                                 <iframe srcDoc={v.html} title={v.name} sandbox="allow-scripts allow-same-origin" />
+                             </div>
+                             <div className="sexy-label">{v.name}</div>
+                         </div>
+                    ))}
+                </div>
+            )}
+        </SideDrawer>
+
+        <div className="immersive-app">
+            <DottedGlowBackground 
+                gap={24} 
+                radius={1.5} 
+                color="rgba(255, 255, 255, 0.02)" 
+                glowColor="rgba(255, 255, 255, 0.15)" 
+                speedScale={0.5} 
+            />
+
+            <div className={`stage-container ${focusedArtifactIndex !== null ? 'mode-focus' : 'mode-split'}`}>
+                 <div className={`empty-state ${hasStarted ? 'fade-out' : ''}`}>
+                     <div className="empty-content">
+                         <h1>Flashed</h1>
+                         <p>Instant landing pages for customer demos</p>
+                         <button className="surprise-button" onClick={handleSurpriseMe} disabled={isLoading}>
+                             <SparklesIcon /> Example Pitch
+                         </button>
+                         <button className="template-browse-btn" onClick={() => setIsTemplateLibraryOpen(true)} disabled={isLoading}>
+                             <TemplateIcon /> Browse Templates
+                         </button>
+                     </div>
+                 </div>
+
+                {sessions.map((session, sIndex) => {
+                    let positionClass = 'hidden';
+                    if (sIndex === currentSessionIndex) positionClass = 'active-session';
+                    else if (sIndex < currentSessionIndex) positionClass = 'past-session';
+                    else if (sIndex > currentSessionIndex) positionClass = 'future-session';
+                    
+                    return (
+                        <div key={session.id} className={`session-group ${positionClass}`}>
+                            <div className="artifact-grid" ref={sIndex === currentSessionIndex ? gridScrollRef : null}>
+                                {session.artifacts.map((artifact, aIndex) => {
+                                    const isFocused = focusedArtifactIndex === aIndex;
+                                    
+                                    return (
+                                        <ArtifactCard 
+                                            key={artifact.id}
+                                            artifact={artifact}
+                                            isFocused={isFocused}
+                                            onClick={() => setFocusedArtifactIndex(aIndex)}
+                                        />
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+
+             {canGoBack && (
+                <button className="nav-handle left" onClick={prevItem} aria-label="Previous">
+                    <ArrowLeftIcon />
+                </button>
+             )}
+             {canGoForward && (
+                <button className="nav-handle right" onClick={nextItem} aria-label="Next">
+                    <ArrowRightIcon />
+                </button>
+             )}
+
+            {/* Refine Input - appears when artifact is focused */}
+            <RefineInput
+                isVisible={focusedArtifactIndex !== null && !isLoading}
+                isRefining={isRefining}
+                onRefine={handleRefine}
+            />
+
+            <div className={`action-bar ${focusedArtifactIndex !== null ? 'visible' : ''}`}>
+                 <div className="active-prompt-label">
+                    {currentSession?.prompt}
+                 </div>
+                 <div className="action-buttons">
+                    <button onClick={() => setFocusedArtifactIndex(null)}>
+                        <GridIcon /> Grid View
+                    </button>
+                    <button onClick={handleGenerateVariations} disabled={isLoading}>
+                        <SparklesIcon /> Variations
+                    </button>
+                    <button onClick={handleShowCode}>
+                        <CodeIcon /> Source
+                    </button>
+                    <button onClick={() => setIsShareModalOpen(true)}>
+                        <ShareIcon /> Share
+                    </button>
+                    <button onClick={handleOpenPublishModal}>
+                        <PublishIcon /> Publish
+                    </button>
+                    <button onClick={() => setIsAnalyticsOpen(true)}>
+                        <ChartIcon /> Analytics
+                    </button>
+                    <button onClick={handleDownload}>
+                        <DownloadIcon /> Download
+                    </button>
+                    <button onClick={handleShowHistory}>
+                        <HistoryIcon /> History
+                    </button>
+                 </div>
+            </div>
+
+            <div className="floating-input-container">
+                {/* Project Indicator */}
+                <button 
+                    className="project-indicator"
+                    onClick={() => setIsProjectManagerOpen(true)}
+                    title="Manage Projects"
+                >
+                    <FolderIcon />
+                    {currentProject ? currentProject.name : 'Projects'}
+                </button>
+                
+                {/* Brand Kit Selector */}
+                <div className="brand-kit-selector">
+                        <button 
+                            className={`brand-kit-btn ${selectedBrandKit ? 'active' : ''}`}
+                            onClick={() => setShowBrandKitDropdown(!showBrandKitDropdown)}
+                        >
+                            <PaletteIcon />
+                            {selectedBrandKit ? (
+                                <>
+                                    <span>{selectedBrandKit.name}</span>
+                                    <div className="color-dots">
+                                        <span className="color-dot" style={{ background: selectedBrandKit.primaryColor }}></span>
+                                        <span className="color-dot" style={{ background: selectedBrandKit.secondaryColor }}></span>
+                                        <span className="color-dot" style={{ background: selectedBrandKit.accentColor }}></span>
+                                    </div>
+                                </>
+                            ) : (
+                                <span>Brand Kit</span>
+                            )}
+                        </button>
+                        
+                        {showBrandKitDropdown && (
+                            <div className="brand-kit-dropdown">
+                                {selectedBrandKit && (
+                                    <button 
+                                        className="brand-kit-dropdown-item"
+                                        onClick={() => {
+                                            setSelectedBrandKit(null);
+                                            setShowBrandKitDropdown(false);
+                                        }}
+                                    >
+                                        <span style={{ color: 'var(--text-secondary)' }}>Clear selection</span>
+                                    </button>
+                                )}
+                                
+                                {brandKits.map(bk => (
+                                    <button
+                                        key={bk.id}
+                                        className="brand-kit-dropdown-item"
+                                        onClick={() => {
+                                            setSelectedBrandKit(bk);
+                                            setShowBrandKitDropdown(false);
+                                        }}
+                                        onDoubleClick={() => openBrandKitEditor(bk)}
+                                    >
+                                        <div className="color-dots">
+                                            <span className="color-dot" style={{ background: bk.primaryColor }}></span>
+                                            <span className="color-dot" style={{ background: bk.secondaryColor }}></span>
+                                            <span className="color-dot" style={{ background: bk.accentColor }}></span>
+                                        </div>
+                                        <span>{bk.name}</span>
+                                    </button>
+                                ))}
+                                
+                                <button 
+                                    className="brand-kit-dropdown-item create-new"
+                                    onClick={() => openBrandKitEditor()}
+                                >
+                                    + Create New Brand Kit
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                
+                {selectedImage && (
+                    <div className="image-preview-pill">
+                        <img src={selectedImage} alt="Reference" />
+                        <span>Attached Image</span>
+                        <button onClick={clearImage} className="clear-image-btn"><XIcon /></button>
+                    </div>
+                )}
+                
+                <div className={`input-wrapper ${isLoading ? 'loading' : ''}`}>
+                    {(!inputValue && !isLoading && !showUrlInput) && (
+                        <div className="animated-placeholder" key={placeholderIndex}>
+                            <span className="placeholder-text">{placeholders[placeholderIndex]}</span>
+                            <span className="tab-hint">Tab</span>
+                        </div>
+                    )}
+                    
+                    {!isLoading ? (
+                        <>
+                             <input 
+                                type="file" 
+                                ref={fileInputRef}
+                                style={{ display: 'none' }} 
+                                accept="image/*" 
+                                onChange={handleContextImageSelect} 
+                            />
+                            <button 
+                                className="link-button" 
+                                onClick={() => fileInputRef.current?.click()}
+                                title="Attach image reference"
+                                style={{ 
+                                    background: selectedImage ? 'rgba(74, 222, 128, 0.1)' : 'transparent',
+                                    color: selectedImage ? '#4ade80' : 'var(--text-secondary)'
+                                }}
+                            >
+                                <UploadIcon />
+                            </button>
+
+                            <button 
+                                className="link-button" 
+                                onClick={() => setShowUrlInput(!showUrlInput)}
+                                title="Add website context (URL)"
+                                style={{ 
+                                    background: showUrlInput ? 'rgba(255,255,255,0.2)' : 'transparent',
+                                    color: urlValue ? '#4ade80' : 'var(--text-secondary)'
+                                }}
+                            >
+                                <LinkIcon />
+                            </button>
+
+                            {/* Clone Mode Toggle */}
+                            {(urlValue || selectedImage) && (
+                                <button 
+                                    className={`clone-mode-btn ${cloneMode ? 'active' : ''}`}
+                                    onClick={() => setCloneMode(!cloneMode)}
+                                    title={cloneMode ? 'Clone mode ON - Will replicate reference layout' : 'Enable clone mode to replicate reference'}
+                                >
+                                    <CloneIcon />
+                                    <span>Clone</span>
+                                </button>
+                            )}
+
+                            {showUrlInput && (
+                                <input
+                                    ref={urlInputRef}
+                                    type="text"
+                                    className="url-input"
+                                    value={urlValue}
+                                    onChange={(e) => setUrlValue(e.target.value)}
+                                    placeholder="https://client-site.com"
+                                    onKeyDown={(e) => e.key === 'Enter' && inputRef.current?.focus()}
+                                    style={{
+                                        width: '180px',
+                                        background: 'rgba(0,0,0,0.3)',
+                                        border: 'none',
+                                        borderRadius: '4px',
+                                        padding: '4px 8px',
+                                        color: '#fff',
+                                        fontSize: '0.85rem',
+                                        marginRight: '8px'
+                                    }}
+                                />
+                            )}
+
+                            <input 
+                                ref={inputRef}
+                                type="text" 
+                                value={inputValue} 
+                                onChange={handleInputChange} 
+                                onKeyDown={handleKeyDown} 
+                                disabled={isLoading}
+                                placeholder={showUrlInput ? "Describe the page..." : ""}
+                                style={{ opacity: showUrlInput && !inputValue ? 0.7 : 1 }}
+                            />
+                        </>
+                    ) : (
+                        <div className="input-generating-label">
+                            <span className="generating-prompt-text">{currentSession?.prompt}</span>
+                            <ThinkingIcon />
+                        </div>
+                    )}
+                    <button className="send-button" onClick={() => handleSendMessage()} disabled={isLoading || !inputValue.trim()}>
+                        <ArrowUpIcon />
+                    </button>
+                </div>
+            </div>
+        </div>
+    </>
+  );
+}
+
+const rootElement = document.getElementById('root');
+if (rootElement) {
+  const root = ReactDOM.createRoot(rootElement);
+  root.render(<React.StrictMode><App /></React.StrictMode>);
+}
