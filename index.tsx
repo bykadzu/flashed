@@ -300,7 +300,7 @@ function App() {
               if (!apiKey) return;
               const ai = new GoogleGenAI({ apiKey });
               const response = await ai.models.generateContent({
-                  model: 'gemini-2.0-flash',
+                  model: 'gemini-3-flash-preview',
                   contents: { 
                       role: 'user', 
                       parts: [{ 
@@ -401,7 +401,7 @@ Required JSON Output Format (stream ONE object per line):
         `.trim();
 
         const responseStream = await ai.models.generateContentStream({
-            model: 'gemini-2.0-flash',
+            model: 'gemini-3-flash-preview',
              contents: [{ parts: [{ text: prompt }], role: 'user' }],
              config: { temperature: 1.1 }
         });
@@ -519,7 +519,7 @@ Return ONLY the complete, updated HTML. No explanations or markdown code blocks.
           `.trim();
           
           const responseStream = await ai.models.generateContentStream({
-              model: 'gemini-2.0-flash',
+              model: 'gemini-3-flash-preview',
               contents: [{ parts: [{ text: prompt }], role: 'user' }],
               config: { temperature: 0.7 }
           });
@@ -721,7 +721,7 @@ Return ONLY a raw JSON array of 3 strings describing the specific vibes.
         }
 
         const styleResponse = await ai.models.generateContent({
-            model: 'gemini-2.0-flash',
+            model: 'gemini-3-flash-preview',
             contents: { role: 'user', parts: styleRequestParts },
             config: { tools } 
         });
@@ -836,7 +836,7 @@ Return ONLY RAW HTML.
                 }
 
                 const responseStream = await ai.models.generateContentStream({
-                    model: 'gemini-2.0-flash',
+                    model: 'gemini-3-flash-preview',
                     contents: [{ parts: generationParts, role: "user" }],
                     config: { tools }
                 });
