@@ -6,7 +6,7 @@
 
 //Vibe coded by ammaar@google.com
 
-import { createOpenRouterClient, DEFAULT_MODEL } from './lib/openrouter';
+import { createOpenRouterClient, DEFAULT_MODEL, getStoredModel, setStoredModel, ModelId } from './lib/openrouter';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 
@@ -18,13 +18,13 @@ import DottedGlowBackground from './components/DottedGlowBackground';
 import ArtifactCard from './components/ArtifactCard';
 import SideDrawer from './components/SideDrawer';
 import ImageCropper from './components/ImageCropper';
-import { 
-    ThinkingIcon, 
-    CodeIcon, 
-    SparklesIcon, 
-    ArrowLeftIcon, 
-    ArrowRightIcon, 
-    ArrowUpIcon, 
+import {
+    ThinkingIcon,
+    CodeIcon,
+    SparklesIcon,
+    ArrowLeftIcon,
+    ArrowRightIcon,
+    ArrowUpIcon,
     GridIcon,
     LinkIcon,
     UploadIcon,
@@ -38,7 +38,8 @@ import {
     FolderIcon,
     CloneIcon,
     TemplateIcon,
-    ChartIcon
+    ChartIcon,
+    SettingsIcon
 } from './components/Icons';
 import PublishModal from './components/PublishModal';
 import ShareModal from './components/ShareModal';
@@ -47,6 +48,7 @@ import BrandKitEditor from './components/BrandKitEditor';
 import ProjectManager from './components/ProjectManager';
 import TemplateLibrary from './components/TemplateLibrary';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
+import Settings from './components/Settings';
 
 function App() {
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -102,6 +104,15 @@ function App() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [isProjectManagerOpen, setIsProjectManagerOpen] = useState(false);
+
+  // Settings State
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [selectedModel, setSelectedModel] = useState<ModelId>(getStoredModel());
+
+  const handleModelChange = (modelId: ModelId) => {
+    setSelectedModel(modelId);
+    setStoredModel(modelId);
+  };
 
   // Image Replacement State
   const [pendingImageReplacement, setPendingImageReplacement] = useState<{artifactId: string, imgId: string} | null>(null);
@@ -300,7 +311,7 @@ function App() {
               if (!apiKey) return;
               const ai = createOpenRouterClient(apiKey);
               const response = await ai.models.generateContent({
-                  model: DEFAULT_MODEL,
+                  model: selectedModel,
                   contents: { 
                       role: 'user', 
                       parts: [{ 
@@ -401,7 +412,7 @@ Required JSON Output Format (stream ONE object per line):
         `.trim();
 
         const responseStream = await ai.models.generateContentStream({
-            model: DEFAULT_MODEL,
+            model: selectedModel,
              contents: [{ parts: [{ text: prompt }], role: 'user' }],
              config: { temperature: 1.1 }
         });
@@ -416,7 +427,7 @@ Required JSON Output Format (stream ONE object per line):
     } finally {
         setIsLoading(false);
     }
-  }, [sessions, currentSessionIndex, focusedArtifactIndex]);
+  }, [sessions, currentSessionIndex, focusedArtifactIndex, selectedModel]);
 
   const applyVariation = (html: string) => {
       if (focusedArtifactIndex === null) return;
@@ -519,7 +530,7 @@ Return ONLY the complete, updated HTML. No explanations or markdown code blocks.
           `.trim();
           
           const responseStream = await ai.models.generateContentStream({
-              model: DEFAULT_MODEL,
+              model: selectedModel,
               contents: [{ parts: [{ text: prompt }], role: 'user' }],
               config: { temperature: 0.7 }
           });
@@ -573,8 +584,8 @@ Return ONLY the complete, updated HTML. No explanations or markdown code blocks.
       } finally {
           setIsRefining(false);
       }
-  }, [focusedArtifactIndex, sessions, currentSessionIndex, isRefining]);
-  
+  }, [focusedArtifactIndex, sessions, currentSessionIndex, isRefining, selectedModel]);
+
   const handleHistorySelect = (index: number) => {
       setCurrentSessionIndex(index);
       setFocusedArtifactIndex(null);
@@ -719,7 +730,7 @@ Return ONLY a raw JSON array of 3 strings describing the specific vibes.
         }
 
         const styleResponse = await ai.models.generateContent({
-            model: DEFAULT_MODEL,
+            model: selectedModel,
             contents: { role: 'user', parts: styleRequestParts }
         });
 
@@ -833,7 +844,7 @@ Return ONLY RAW HTML.
                 }
 
                 const responseStream = await ai.models.generateContentStream({
-                    model: DEFAULT_MODEL,
+                    model: selectedModel,
                     contents: [{ parts: generationParts, role: "user" }]
                 });
 
@@ -889,7 +900,7 @@ Return ONLY RAW HTML.
         setIsLoading(false);
         setTimeout(() => inputRef.current?.focus(), 100);
     }
-  }, [inputValue, urlValue, selectedImage, isLoading, sessions.length]);
+  }, [inputValue, urlValue, selectedImage, isLoading, sessions.length, selectedModel, selectedBrandKit, cloneMode]);
 
   const handleSurpriseMe = () => {
       const currentPrompt = placeholders[placeholderIndex];
@@ -1026,6 +1037,14 @@ Return ONLY RAW HTML.
                 artifact={currentSession.artifacts[focusedArtifactIndex]}
             />
         )}
+
+        {/* Settings Modal */}
+        <Settings
+            isOpen={isSettingsOpen}
+            onClose={() => setIsSettingsOpen(false)}
+            selectedModel={selectedModel}
+            onModelChange={handleModelChange}
+        />
 
         <SideDrawer 
             isOpen={drawerState.isOpen} 
@@ -1166,6 +1185,9 @@ Return ONLY RAW HTML.
                     </button>
                     <button onClick={handleShowHistory}>
                         <HistoryIcon /> History
+                    </button>
+                    <button onClick={() => setIsSettingsOpen(true)}>
+                        <SettingsIcon /> Settings
                     </button>
                  </div>
             </div>

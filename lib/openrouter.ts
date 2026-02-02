@@ -1,7 +1,35 @@
 // OpenRouter API helper
 // Docs: https://openrouter.ai/docs
 
-export const DEFAULT_MODEL = 'google/gemini-2.5-flash-preview';
+export const AVAILABLE_MODELS = [
+  { id: 'google/gemini-3-flash-preview', name: 'Gemini 3 Flash', provider: 'Google' },
+  { id: 'anthropic/claude-sonnet-4.5', name: 'Claude Sonnet 4.5', provider: 'Anthropic' },
+  { id: 'x-ai/grok-code-fast-1', name: 'Grok Code Fast', provider: 'xAI' },
+  { id: 'deepseek/deepseek-v3.2', name: 'DeepSeek V3.2', provider: 'DeepSeek' },
+  { id: 'moonshotai/kimi-k2.5', name: 'Kimi K2.5', provider: 'Moonshot' },
+  { id: 'anthropic/claude-opus-4.5', name: 'Claude Opus 4.5', provider: 'Anthropic' },
+  { id: 'z-ai/glm-4.7', name: 'GLM 4.7', provider: 'Zhipu' },
+] as const;
+
+export type ModelId = typeof AVAILABLE_MODELS[number]['id'];
+
+export const DEFAULT_MODEL: ModelId = 'google/gemini-3-flash-preview';
+
+// Storage key for persisting model selection
+const MODEL_STORAGE_KEY = 'flashed_selected_model';
+
+export function getStoredModel(): ModelId {
+  if (typeof window === 'undefined') return DEFAULT_MODEL;
+  const stored = localStorage.getItem(MODEL_STORAGE_KEY);
+  if (stored && AVAILABLE_MODELS.some(m => m.id === stored)) {
+    return stored as ModelId;
+  }
+  return DEFAULT_MODEL;
+}
+
+export function setStoredModel(modelId: ModelId): void {
+  localStorage.setItem(MODEL_STORAGE_KEY, modelId);
+}
 
 interface ContentPart {
   text?: string;
