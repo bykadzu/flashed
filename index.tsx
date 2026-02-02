@@ -39,7 +39,8 @@ import {
     CloneIcon,
     TemplateIcon,
     ChartIcon,
-    SettingsIcon
+    SettingsIcon,
+    HomeIcon
 } from './components/Icons';
 import PublishModal from './components/PublishModal';
 import ShareModal from './components/ShareModal';
@@ -1162,6 +1163,12 @@ Return ONLY RAW HTML.
                     {currentSession?.prompt}
                  </div>
                  <div className="action-buttons">
+                    <button onClick={() => {
+                        setCurrentSessionIndex(-1);
+                        setFocusedArtifactIndex(null);
+                    }}>
+                        <HomeIcon /> New
+                    </button>
                     <button onClick={() => setFocusedArtifactIndex(null)}>
                         <GridIcon /> Grid View
                     </button>
