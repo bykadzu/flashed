@@ -6,7 +6,7 @@
 
 //Vibe coded by ammaar@google.com
 
-import { GoogleGenAI } from '@google/genai';
+import { createOpenRouterClient, DEFAULT_MODEL } from './lib/openrouter';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 
@@ -298,9 +298,9 @@ function App() {
           try {
               const apiKey = process.env.API_KEY;
               if (!apiKey) return;
-              const ai = new GoogleGenAI({ apiKey });
+              const ai = createOpenRouterClient(apiKey);
               const response = await ai.models.generateContent({
-                  model: 'gemini-3-flash-preview',
+                  model: DEFAULT_MODEL,
                   contents: { 
                       role: 'user', 
                       parts: [{ 
@@ -380,7 +380,7 @@ function App() {
     try {
         const apiKey = process.env.API_KEY;
         if (!apiKey) throw new Error("API_KEY is not configured.");
-        const ai = new GoogleGenAI({ apiKey });
+        const ai = createOpenRouterClient(apiKey);
 
         const prompt = `
 You are an Expert UI Designer.
@@ -401,7 +401,7 @@ Required JSON Output Format (stream ONE object per line):
         `.trim();
 
         const responseStream = await ai.models.generateContentStream({
-            model: 'gemini-3-flash-preview',
+            model: DEFAULT_MODEL,
              contents: [{ parts: [{ text: prompt }], role: 'user' }],
              config: { temperature: 1.1 }
         });
@@ -492,7 +492,7 @@ Required JSON Output Format (stream ONE object per line):
       try {
           const apiKey = process.env.API_KEY;
           if (!apiKey) throw new Error("API_KEY is not configured.");
-          const ai = new GoogleGenAI({ apiKey });
+          const ai = createOpenRouterClient(apiKey);
           
           const prompt = `
 You are an Expert UI Refiner.
@@ -519,7 +519,7 @@ Return ONLY the complete, updated HTML. No explanations or markdown code blocks.
           `.trim();
           
           const responseStream = await ai.models.generateContentStream({
-              model: 'gemini-3-flash-preview',
+              model: DEFAULT_MODEL,
               contents: [{ parts: [{ text: prompt }], role: 'user' }],
               config: { temperature: 0.7 }
           });
@@ -683,7 +683,7 @@ Return ONLY the complete, updated HTML. No explanations or markdown code blocks.
     try {
         const apiKey = process.env.API_KEY;
         if (!apiKey) throw new Error("API_KEY is not configured.");
-        const ai = new GoogleGenAI({ apiKey });
+        const ai = createOpenRouterClient(apiKey);
 
         // Phase 1: Determine Styles - UPDATED for Context Awareness
         const stylePrompt = `
@@ -705,8 +705,6 @@ Think broad: Retro, Brutalist, Playful, Corporate, Minimalist, Industrial, Natur
 Return ONLY a raw JSON array of 3 strings describing the specific vibes.
         `.trim();
 
-        const tools = currentUrl ? [{ googleSearch: {} }] : [];
-        
         const styleRequestParts: any[] = [{ text: stylePrompt }];
         
         // If an image is selected, add it to the request so Gemini can "see" the vibe
@@ -721,9 +719,8 @@ Return ONLY a raw JSON array of 3 strings describing the specific vibes.
         }
 
         const styleResponse = await ai.models.generateContent({
-            model: 'gemini-3-flash-preview',
-            contents: { role: 'user', parts: styleRequestParts },
-            config: { tools } 
+            model: DEFAULT_MODEL,
+            contents: { role: 'user', parts: styleRequestParts }
         });
 
         let generatedStyles: string[] = [];
@@ -836,9 +833,8 @@ Return ONLY RAW HTML.
                 }
 
                 const responseStream = await ai.models.generateContentStream({
-                    model: 'gemini-3-flash-preview',
-                    contents: [{ parts: generationParts, role: "user" }],
-                    config: { tools }
+                    model: DEFAULT_MODEL,
+                    contents: [{ parts: generationParts, role: "user" }]
                 });
 
                 let accumulatedHtml = '';
