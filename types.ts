@@ -38,12 +38,37 @@ export interface Artifact {
     formSettings?: FormSettings;
 }
 
+// ============ Multi-Page Site Types ============
+export interface SitePage {
+    id: string;
+    name: string;
+    slug: string;
+    html: string;
+    status: 'streaming' | 'complete' | 'error';
+    isHome?: boolean;
+}
+
+export interface Site {
+    id: string;
+    name: string;
+    styleName: string;
+    pages: SitePage[];
+    sharedStyles?: string;
+    sharedNav?: string;
+    seo?: SEOSettings;
+    publishInfo?: PublishInfo;
+    formSettings?: FormSettings;
+}
+
 export interface Session {
     id: string;
     prompt: string;
     timestamp: number;
     artifacts: Artifact[];
     projectId?: string;
+    // Multi-site support
+    site?: Site;
+    mode?: 'single' | 'site';
 }
 
 export interface ComponentVariation { name: string; html: string; }

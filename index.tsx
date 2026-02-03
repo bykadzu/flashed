@@ -10,7 +10,7 @@ import { createOpenRouterClient, DEFAULT_MODEL, getStoredModel, setStoredModel, 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 
-import { Artifact, Session, ComponentVariation, LayoutOption, BrandKit, Project } from './types';
+import { Artifact, Session, ComponentVariation, LayoutOption, BrandKit, Project, Site, SitePage } from './types';
 import { INITIAL_PLACEHOLDERS } from './constants';
 import { generateId } from './utils';
 
@@ -87,6 +87,11 @@ function App() {
   
   // Clone Mode State
   const [cloneMode, setCloneMode] = useState(false);
+  
+  // Site Mode State
+  const [siteMode, setSiteMode] = useState(false);
+  const [pageStructure, setPageStructure] = useState<string>('');
+  const [currentSitePageId, setCurrentSitePageId] = useState<string>('');
   
   // Template Library State
   const [isTemplateLibraryOpen, setIsTemplateLibraryOpen] = useState(false);
@@ -189,13 +194,19 @@ function App() {
       }
   }, [projects]);
 
-  // Handle Image Click Messages from Iframe
+  // Handle Image Click and Site Navigation Messages from Iframe
   useEffect(() => {
       const handleMessage = (event: MessageEvent) => {
           if (event.data && event.data.type === 'IMAGE_CLICK') {
               const { artifactId, imgId } = event.data;
               setPendingImageReplacement({ artifactId, imgId });
               replaceInputRef.current?.click();
+          }
+          
+          // Handle site internal navigation
+          if (event.data && event.data.type === 'SITE_NAVIGATE') {
+              const { pageId } = event.data;
+              setCurrentSitePageId(pageId);
           }
       };
       
@@ -655,6 +666,132 @@ Return ONLY the complete, updated HTML. No explanations or markdown code blocks.
       setIsProjectManagerOpen(false);
   };
 
+  // Add Page to existing site
+  const handleAddPage = useCallback(async (sessionId: string) => {
+      const pageName = prompt('Enter page name (e.g., About, Contact, Services):');
+      if (!pageName) return;
+      
+      const slug = pageName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      const pageId = generateId();
+      
+      const session = sessions.find(s => s.id === sessionId);
+      if (!session?.site) return;
+      
+      // Add placeholder page
+      const newPage: SitePage = {
+          id: pageId,
+          name: pageName,
+          slug,
+          html: '',
+          status: 'streaming',
+          isHome: false
+      };
+      
+      setSessions(prev => prev.map(s => 
+          s.id === sessionId && s.site ? {
+              ...s,
+              site: {
+                  ...s.site,
+                  pages: [...s.site.pages, newPage]
+              }
+          } : s
+      ));
+      
+      setCurrentSitePageId(pageId);
+      
+      // Generate page content
+      try {
+          const apiKey = process.env.API_KEY;
+          if (!apiKey) throw new Error("API_KEY is not configured.");
+          const ai = createOpenRouterClient(apiKey);
+          
+          const existingPages = session.site.pages.map(p => `- ${p.name} (/${p.slug})`).join('\n');
+          const homeHtml = session.site.pages.find(p => p.isHome)?.html || '';
+          
+          const prompt = `
+You are a World-Class Frontend Engineer.
+Create a "${pageName}" page for an existing website.
+
+**EXISTING SITE INFO:**
+Original prompt: "${session.prompt}"
+Existing pages:
+${existingPages}
+
+**STYLE REFERENCE (match this exactly):**
+\`\`\`html
+${homeHtml.substring(0, 4000)}
+\`\`\`
+
+**PAGE REQUIREMENTS:**
+1. Match the EXACT same styling, colors, fonts, and design language
+2. Include consistent navigation that links to: ${session.site.pages.map(p => `/${p.slug}`).join(', ')}, /${slug}
+3. Create relevant content for a "${pageName}" page
+4. Mobile responsive
+5. Self-contained HTML with embedded CSS
+
+**IMAGES:** Use \`https://image.pollinations.ai/prompt/{description}?width={w}&height={h}&nologo=true\`
+
+Return ONLY RAW HTML.
+          `.trim();
+          
+          const responseStream = await ai.models.generateContentStream({
+              model: selectedModel,
+              contents: [{ parts: [{ text: prompt }], role: "user" }]
+          });
+          
+          let accumulatedHtml = '';
+          for await (const chunk of responseStream) {
+              const text = chunk.text;
+              if (typeof text === 'string') {
+                  accumulatedHtml += text;
+                  setSessions(prev => prev.map(s => 
+                      s.id === sessionId && s.site ? {
+                          ...s,
+                          site: {
+                              ...s.site,
+                              pages: s.site.pages.map(p => 
+                                  p.id === pageId ? { ...p, html: accumulatedHtml } : p
+                              )
+                          }
+                      } : s
+                  ));
+              }
+          }
+          
+          // Clean up
+          let finalHtml = accumulatedHtml.trim();
+          if (finalHtml.startsWith('```html')) finalHtml = finalHtml.substring(7).trimStart();
+          if (finalHtml.startsWith('```')) finalHtml = finalHtml.substring(3).trimStart();
+          if (finalHtml.endsWith('```')) finalHtml = finalHtml.substring(0, finalHtml.length - 3).trimEnd();
+          
+          setSessions(prev => prev.map(s => 
+              s.id === sessionId && s.site ? {
+                  ...s,
+                  site: {
+                      ...s.site,
+                      pages: s.site.pages.map(p => 
+                          p.id === pageId ? { ...p, html: finalHtml, status: 'complete' } : p
+                      )
+                  }
+              } : s
+          ));
+          
+      } catch (e: any) {
+          console.error('Error adding page:', e);
+          setSessions(prev => prev.map(s => 
+              s.id === sessionId && s.site ? {
+                  ...s,
+                  site: {
+                      ...s.site,
+                      pages: s.site.pages.map(p => 
+                          p.id === pageId ? { ...p, html: `<div style="color: #ff6b6b; padding: 20px;">Error: ${e.message}</div>`, status: 'error' } : p
+                      )
+                  }
+              } : s
+          ));
+      }
+  }, [sessions, selectedModel]);
+
   const handleSendMessage = useCallback(async (manualPrompt?: string) => {
     const promptToUse = manualPrompt || inputValue;
     const trimmedInput = promptToUse.trim();
@@ -671,7 +808,167 @@ Return ONLY the complete, updated HTML. No explanations or markdown code blocks.
     setIsLoading(true);
     const baseTime = Date.now();
     const sessionId = generateId();
+    const displayPrompt = currentUrl ? `${trimmedInput} (${currentUrl})` : trimmedInput;
 
+    // Handle Site Mode vs Single Page Mode
+    if (siteMode) {
+        // Parse page structure or use defaults
+        const pages = pageStructure.trim() 
+            ? pageStructure.split('\n').map(line => line.trim()).filter(Boolean)
+            : ['Home', 'About', 'Contact'];
+        
+        const sitePages: SitePage[] = pages.map((pageName, i) => ({
+            id: `${sessionId}_page_${i}`,
+            name: pageName,
+            slug: pageName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'home',
+            html: '',
+            status: 'streaming' as const,
+            isHome: i === 0
+        }));
+        
+        const newSite: Site = {
+            id: `${sessionId}_site`,
+            name: trimmedInput.substring(0, 50),
+            styleName: 'Designing...',
+            pages: sitePages
+        };
+        
+        const newSession: Session = {
+            id: sessionId,
+            prompt: displayPrompt,
+            timestamp: baseTime,
+            artifacts: [],
+            mode: 'site',
+            site: newSite
+        };
+        
+        setSessions(prev => [...prev, newSession]);
+        setCurrentSessionIndex(sessions.length);
+        setFocusedArtifactIndex(0);
+        setCurrentSitePageId(sitePages[0].id);
+        
+        // Generate site pages
+        try {
+            const apiKey = process.env.API_KEY;
+            if (!apiKey) throw new Error("API_KEY is not configured.");
+            const ai = createOpenRouterClient(apiKey);
+            
+            // Determine style for the site
+            const stylePrompt = `
+You are an expert Design Strategist.
+Client Request: "${trimmedInput}" (Multi-page website).
+${currentUrl ? `Context URL: ${currentUrl}.` : ''}
+
+Determine ONE cohesive visual style for this website.
+Consider: typography, color scheme, layout philosophy, visual elements.
+
+Return ONLY a single string describing the style (e.g., "Modern Minimalist with Bold Typography" or "Warm Corporate with Soft Gradients").
+            `.trim();
+            
+            const styleResponse = await ai.models.generateContent({
+                model: selectedModel,
+                contents: { role: 'user', parts: [{ text: stylePrompt }] }
+            });
+            
+            const styleName = (styleResponse.text || 'Modern Professional').trim().replace(/^["']|["']$/g, '');
+            
+            setSessions(prev => prev.map(s => 
+                s.id === sessionId && s.site ? {
+                    ...s,
+                    site: { ...s.site, styleName }
+                } : s
+            ));
+            
+            const brandKitInstruction = selectedBrandKit ? `
+**BRAND KIT (MUST USE THESE):**
+- Primary Color: ${selectedBrandKit.primaryColor}
+- Secondary Color: ${selectedBrandKit.secondaryColor}
+- Accent Color: ${selectedBrandKit.accentColor}
+- Font Family: '${selectedBrandKit.fontFamily}' (import from Google Fonts)
+${selectedBrandKit.logoUrl ? `- Logo URL: ${selectedBrandKit.logoUrl}` : ''}
+` : '';
+            
+            const pageList = sitePages.map(p => `- ${p.name} (/${p.slug})`).join('\n');
+            
+            // Generate each page
+            for (const page of sitePages) {
+                const pagePrompt = `
+You are a World-Class Frontend Engineer building a multi-page website.
+Website: "${trimmedInput}"
+Style: "${styleName}"
+${brandKitInstruction}
+
+**PAGE TO BUILD:** ${page.name} (${page.isHome ? 'Homepage' : 'Inner page'})
+**URL:** /${page.slug}
+
+**ALL PAGES IN THIS SITE:**
+${pageList}
+
+**REQUIREMENTS:**
+1. Include a consistent navigation bar with links to ALL pages (use relative links like "/${sitePages[0].slug}", "/${sitePages[1]?.slug || 'about'}", etc.)
+2. ${page.isHome ? 'Create a compelling homepage with hero section, features, and call-to-action' : `Create appropriate content for a ${page.name} page`}
+3. Mobile responsive with Flexbox/Grid
+4. Self-contained HTML with embedded CSS
+5. Consistent styling across all pages
+
+**IMAGES:** Use \`https://image.pollinations.ai/prompt/{description}?width={w}&height={h}&nologo=true\`
+
+Return ONLY RAW HTML.
+                `.trim();
+                
+                const responseStream = await ai.models.generateContentStream({
+                    model: selectedModel,
+                    contents: [{ parts: [{ text: pagePrompt }], role: "user" }]
+                });
+                
+                let accumulatedHtml = '';
+                for await (const chunk of responseStream) {
+                    const text = chunk.text;
+                    if (typeof text === 'string') {
+                        accumulatedHtml += text;
+                        setSessions(prev => prev.map(s => 
+                            s.id === sessionId && s.site ? {
+                                ...s,
+                                site: {
+                                    ...s.site,
+                                    pages: s.site.pages.map(p => 
+                                        p.id === page.id ? { ...p, html: accumulatedHtml } : p
+                                    )
+                                }
+                            } : s
+                        ));
+                    }
+                }
+                
+                // Clean up
+                let finalHtml = accumulatedHtml.trim();
+                if (finalHtml.startsWith('```html')) finalHtml = finalHtml.substring(7).trimStart();
+                if (finalHtml.startsWith('```')) finalHtml = finalHtml.substring(3).trimStart();
+                if (finalHtml.endsWith('```')) finalHtml = finalHtml.substring(0, finalHtml.length - 3).trimEnd();
+                
+                setSessions(prev => prev.map(s => 
+                    s.id === sessionId && s.site ? {
+                        ...s,
+                        site: {
+                            ...s.site,
+                            pages: s.site.pages.map(p => 
+                                p.id === page.id ? { ...p, html: finalHtml, status: 'complete' } : p
+                            )
+                        }
+                    } : s
+                ));
+            }
+            
+        } catch (e) {
+            console.error("Fatal error in site generation", e);
+        } finally {
+            setIsLoading(false);
+            setPageStructure('');
+        }
+        return;
+    }
+
+    // Single Page Mode (original behavior)
     const placeholderArtifacts: Artifact[] = Array(3).fill(null).map((_, i) => ({
         id: `${sessionId}_${i}`,
         styleName: 'Designing...',
@@ -679,13 +976,12 @@ Return ONLY the complete, updated HTML. No explanations or markdown code blocks.
         status: 'streaming',
     }));
 
-    const displayPrompt = currentUrl ? `${trimmedInput} (${currentUrl})` : trimmedInput;
-
     const newSession: Session = {
         id: sessionId,
         prompt: displayPrompt,
         timestamp: baseTime,
-        artifacts: placeholderArtifacts
+        artifacts: placeholderArtifacts,
+        mode: 'single'
     };
 
     setSessions(prev => [...prev, newSession]);
@@ -1119,21 +1415,37 @@ Return ONLY RAW HTML.
                     else if (sIndex < currentSessionIndex) positionClass = 'past-session';
                     else if (sIndex > currentSessionIndex) positionClass = 'future-session';
                     
+                    // Check if this session has a site
+                    const isSiteSession = session.mode === 'site' && session.site;
+                    
                     return (
                         <div key={session.id} className={`session-group ${positionClass}`}>
                             <div className="artifact-grid" ref={sIndex === currentSessionIndex ? gridScrollRef : null}>
-                                {session.artifacts.map((artifact, aIndex) => {
-                                    const isFocused = focusedArtifactIndex === aIndex;
-                                    
-                                    return (
-                                        <ArtifactCard 
-                                            key={artifact.id}
-                                            artifact={artifact}
-                                            isFocused={isFocused}
-                                            onClick={() => setFocusedArtifactIndex(aIndex)}
-                                        />
-                                    );
-                                })}
+                                {isSiteSession ? (
+                                    // Site mode: render the site with page navigation
+                                    <ArtifactCard 
+                                        key={session.site!.id}
+                                        site={session.site}
+                                        isFocused={focusedArtifactIndex === 0}
+                                        onClick={() => setFocusedArtifactIndex(0)}
+                                        onAddPage={() => handleAddPage(session.id)}
+                                        onPageChange={(pageId) => setCurrentSitePageId(pageId)}
+                                    />
+                                ) : (
+                                    // Single page mode: render artifacts
+                                    session.artifacts.map((artifact, aIndex) => {
+                                        const isFocused = focusedArtifactIndex === aIndex;
+                                        
+                                        return (
+                                            <ArtifactCard 
+                                                key={artifact.id}
+                                                artifact={artifact}
+                                                isFocused={isFocused}
+                                                onClick={() => setFocusedArtifactIndex(aIndex)}
+                                            />
+                                        );
+                                    })
+                                )}
                             </div>
                         </div>
                     );
@@ -1210,6 +1522,36 @@ Return ONLY RAW HTML.
                     {currentProject ? currentProject.name : 'Projects'}
                 </button>
                 
+                {/* Site Mode Toggle */}
+                <div className="site-mode-toggle">
+                    <button 
+                        className={`mode-btn ${!siteMode ? 'active' : ''}`}
+                        onClick={() => setSiteMode(false)}
+                    >
+                        📄 Single Page
+                    </button>
+                    <button 
+                        className={`mode-btn ${siteMode ? 'active' : ''}`}
+                        onClick={() => setSiteMode(true)}
+                    >
+                        🌐 Multi-Page Site
+                    </button>
+                </div>
+
+                {/* Page Structure Input (Site Mode Only) */}
+                {siteMode && (
+                    <div className="page-structure-input">
+                        <label htmlFor="page-structure">Page Structure:</label>
+                        <textarea
+                            id="page-structure"
+                            value={pageStructure}
+                            onChange={(e) => setPageStructure(e.target.value)}
+                            placeholder="Home&#10;About&#10;Services&#10;Contact&#10;&#10;(One page per line, or leave empty for defaults)"
+                            rows={4}
+                        />
+                    </div>
+                )}
+
                 {/* Brand Kit Selector */}
                 <div className="brand-kit-selector">
                         <button 

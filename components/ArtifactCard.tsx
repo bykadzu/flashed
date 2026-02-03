@@ -4,51 +4,111 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 
-import React, { useEffect, useRef, useMemo } from 'react';
-import { Artifact } from '../types';
+import React, { useEffect, useRef, useMemo, useState } from 'react';
+import { Artifact, Site, SitePage } from '../types';
 import { GlobeIcon } from './Icons';
+import PageNavigator from './PageNavigator';
 
 interface ArtifactCardProps {
-    artifact: Artifact;
+    artifact?: Artifact;
+    site?: Site;
     isFocused: boolean;
     onClick: () => void;
+    onAddPage?: () => void;
+    onPageChange?: (pageId: string) => void;
 }
 
 const ArtifactCard = React.memo(({ 
     artifact, 
+    site,
     isFocused, 
-    onClick 
+    onClick,
+    onAddPage,
+    onPageChange
 }: ArtifactCardProps) => {
     const codeRef = useRef<HTMLPreElement>(null);
+    const [currentPageId, setCurrentPageId] = useState<string>(
+        site?.pages.find(p => p.isHome)?.id || site?.pages[0]?.id || ''
+    );
+
+    // Update currentPageId when site pages change
+    useEffect(() => {
+        if (site && !site.pages.find(p => p.id === currentPageId)) {
+            setCurrentPageId(site.pages[0]?.id || '');
+        }
+    }, [site, currentPageId]);
+
+    // Get current content to display
+    const currentPage = site?.pages.find(p => p.id === currentPageId);
+    const displayContent = site ? currentPage : artifact;
+    const html = site ? currentPage?.html || '' : artifact?.html || '';
+    const status = site ? currentPage?.status : artifact?.status;
+    const id = site ? (currentPage?.id || site.id) : artifact?.id || '';
+    const styleName = site ? site.styleName : artifact?.styleName || '';
+    const publishInfo = site?.publishInfo || artifact?.publishInfo;
 
     // Auto-scroll logic for this specific card
     useEffect(() => {
         if (codeRef.current) {
             codeRef.current.scrollTop = codeRef.current.scrollHeight;
         }
-    }, [artifact.html]);
+    }, [html]);
 
-    const isBlurring = artifact.status === 'streaming';
+    const isBlurring = status === 'streaming';
+
+    const handlePageSelect = (pageId: string) => {
+        setCurrentPageId(pageId);
+        onPageChange?.(pageId);
+    };
 
     // Inject helper script for interactions
-    // 1. Intercept Link clicks (prevent navigation/errors)
+    // 1. Intercept Link clicks (handle site navigation or prevent external)
     // 2. Intercept Image clicks (send message to parent for replacement)
     const srcDoc = useMemo(() => {
-        if (!artifact.html) return '';
+        if (!html) return '';
+        
+        // Build page mapping for internal navigation
+        const pageMapping = site?.pages.map(p => ({ slug: p.slug, id: p.id })) || [];
         
         const script = `
         <script>
             (function() {
-                const ARTIFACT_ID = "${artifact.id}";
+                const ARTIFACT_ID = "${id}";
+                const IS_SITE = ${!!site};
+                const PAGE_MAPPING = ${JSON.stringify(pageMapping)};
                 
                 document.addEventListener('click', function(e) {
                     const target = e.target;
                     
                     // Handle Links
-                    if (target.closest('a')) {
+                    const link = target.closest('a');
+                    if (link) {
                         e.preventDefault();
                         e.stopPropagation();
-                        console.log('Link navigation prevented in preview');
+                        
+                        const href = link.getAttribute('href');
+                        
+                        // Check for internal site navigation
+                        if (IS_SITE && href) {
+                            // Handle relative links like "/about" or "about.html" or "#about"
+                            const cleanHref = href.replace(/^\\//, '').replace(/\\.html$/, '').replace(/^#/, '');
+                            const targetPage = PAGE_MAPPING.find(p => 
+                                p.slug === cleanHref || 
+                                p.slug === href ||
+                                cleanHref === '' && p.slug === 'home'
+                            );
+                            
+                            if (targetPage) {
+                                window.parent.postMessage({ 
+                                    type: 'SITE_NAVIGATE', 
+                                    artifactId: ARTIFACT_ID,
+                                    pageId: targetPage.id
+                                }, '*');
+                                return;
+                            }
+                        }
+                        
+                        console.log('Link navigation prevented in preview:', href);
                         return;
                     }
                     
@@ -88,38 +148,48 @@ const ArtifactCard = React.memo(({
         `;
         
         // Append script before body close, or at end
-        if (artifact.html.includes('</body>')) {
-            return artifact.html.replace('</body>', `${script}</body>`);
+        if (html.includes('</body>')) {
+            return html.replace('</body>', `${script}</body>`);
         } else {
-            return artifact.html + script;
+            return html + script;
         }
-    }, [artifact.html, artifact.id]);
+    }, [html, id, site]);
 
     return (
         <div 
-            className={`artifact-card ${isFocused ? 'focused' : ''} ${isBlurring ? 'generating' : ''}`}
+            className={`artifact-card ${isFocused ? 'focused' : ''} ${isBlurring ? 'generating' : ''} ${site ? 'site-mode' : ''}`}
             onClick={onClick}
         >
             <div className="artifact-header">
-                <span className="artifact-style-tag">{artifact.styleName}</span>
+                <span className="artifact-style-tag">{styleName}</span>
+                {site && <span className="site-badge">📄 {site.pages.length} pages</span>}
             </div>
-            {artifact.publishInfo && (
-                <div className="published-badge" title={`Published at ${artifact.publishInfo.url}`}>
+            {publishInfo && (
+                <div className="published-badge" title={`Published at ${publishInfo.url}`}>
                     <GlobeIcon /> Live
                 </div>
+            )}
+            {site && isFocused && (
+                <PageNavigator
+                    pages={site.pages}
+                    currentPageId={currentPageId}
+                    onPageSelect={handlePageSelect}
+                    onAddPage={onAddPage}
+                    compact={!isFocused}
+                />
             )}
             <div className="artifact-card-inner">
                 {isBlurring && (
                     <div className="generating-overlay">
                         <pre ref={codeRef} className="code-stream-preview">
-                            {artifact.html}
+                            {html}
                         </pre>
                     </div>
                 )}
                 <iframe 
-                    id={`iframe-${artifact.id}`}
+                    id={`iframe-${id}`}
                     srcDoc={srcDoc} 
-                    title={artifact.id} 
+                    title={id} 
                     sandbox="allow-scripts allow-forms allow-modals allow-popups allow-presentation allow-same-origin"
                     className="artifact-iframe"
                 />
