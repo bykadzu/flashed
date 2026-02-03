@@ -1,0 +1,5 @@
+{
+  "name": "Lumina HTML Library",
+  "description": "A modern, secure visual library for managing and previewing HTML snippets and files with sandboxed rendering.",
+  "requestFramePermissions": []
+}
