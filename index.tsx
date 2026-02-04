@@ -51,6 +51,7 @@ import ProjectManager from './components/ProjectManager';
 import TemplateLibrary from './components/TemplateLibrary';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import Settings from './components/Settings';
+import Sidebar from './components/Sidebar';
 
 function App() {
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -1421,6 +1422,25 @@ Return ONLY RAW HTML.
             )}
         </SideDrawer>
 
+        <Sidebar
+            onHome={() => {
+                setFocusedArtifactIndex(null);
+                setCurrentSessionIndex(-1);
+            }}
+            onNew={() => {
+                setFocusedArtifactIndex(null);
+                setCurrentSessionIndex(-1);
+                inputRef.current?.focus();
+            }}
+            onProjects={() => setIsProjectManagerOpen(true)}
+            onHistory={() => setDrawerState({ isOpen: true, mode: 'history', title: 'History', data: null })}
+            onShare={() => setIsShareModalOpen(true)}
+            onPublish={handleOpenPublishModal}
+            onAnalytics={() => setIsAnalyticsOpen(true)}
+            onSettings={() => setIsSettingsOpen(true)}
+            hasArtifact={focusedArtifactIndex !== null && currentSession?.artifacts[focusedArtifactIndex] !== undefined}
+        />
+
         <div className="immersive-app">
             <DottedGlowBackground 
                 gap={24} 
@@ -1550,16 +1570,6 @@ Return ONLY RAW HTML.
                 {/* Controls bar - only shown when user has started working */}
                 {hasStarted && (
                     <div className="input-controls-bar">
-                        {/* Project Indicator */}
-                        <button
-                            className="project-indicator"
-                            onClick={() => setIsProjectManagerOpen(true)}
-                            title="Manage Projects"
-                        >
-                            <FolderIcon />
-                            {currentProject ? currentProject.name : 'Projects'}
-                        </button>
-
                         {/* Site Mode Toggle */}
                         <div className="site-mode-toggle">
                             <button
