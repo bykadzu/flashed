@@ -725,14 +725,16 @@ html, body {
     transition: all 0.4s ease-out 0.2s;
     z-index: 90; pointer-events: none;
 }
-.action-bar.visible { opacity: 1; transform: translateY(0); }
+.action-bar.visible { opacity: 1; transform: translateY(0); pointer-events: auto; }
+.action-bar.visible .active-prompt-label,
+.action-bar.visible .action-buttons { pointer-events: auto; }
 .active-prompt-label {
     color: var(--text-secondary); font-size: 0.9rem;
     background: rgba(0,0,0,0.5); padding: 6px 12px; border-radius: 20px;
     max-width: 80vw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    backdrop-filter: blur(8px); pointer-events: auto;
+    backdrop-filter: blur(8px); pointer-events: none;
 }
-.action-buttons { display: flex; gap: 12px; pointer-events: auto; }
+.action-buttons { display: flex; gap: 12px; pointer-events: none; }
 .action-buttons button {
     background: var(--input-bg);
     border: 1px solid var(--border-color);
