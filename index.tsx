@@ -40,7 +40,8 @@ import {
     TemplateIcon,
     ChartIcon,
     SettingsIcon,
-    HomeIcon
+    HomeIcon,
+    LayersIcon
 } from './components/Icons';
 import PublishModal from './components/PublishModal';
 import ShareModal from './components/ShareModal';
@@ -405,35 +406,69 @@ function App() {
         if (!apiKey) throw new Error("API_KEY is not configured.");
         const ai = createOpenRouterClient(apiKey);
 
-        const prompt = `
-You are an Expert UI Designer.
-Generate 3 distinct variations of the following design: "${currentSession.prompt}".
+        // Define 3 distinct variation styles
+        const variationStyles = [
+            { name: 'Typography & Layout', focus: 'Focus on bold typography choices, creative text hierarchy, and an innovative layout structure. Use interesting font pairings and whitespace.' },
+            { name: 'Color & Depth', focus: 'Focus on a striking color palette, gradients, shadows, and visual depth. Create dimension through layering and color contrast.' },
+            { name: 'Different Vibe', focus: 'Take a completely different stylistic direction. If the original is corporate, make it playful. If minimal, make it bold. Surprise the user.' }
+        ];
 
-**OBJECTIVE:**
-Create 3 significantly different aesthetic interpretations.
-Do NOT stick to just one style. Explore the range of possibilities (e.g., from Minimalist to Brutalist to Playful).
+        // Generate each variation in parallel (more reliable than streaming JSON)
+        const generateVariation = async (style: { name: string; focus: string }) => {
+            const prompt = `
+You are a World-Class Frontend Engineer.
+Create a variation of this design: "${currentSession.prompt}".
 
-**VARIATIONS:**
-1. **Variation A**: Focus on Typography and Layout.
-2. **Variation B**: Focus on Color and Depth.
-3. **Variation C**: Focus on a completely different Vibe (e.g. if A is serious, C is playful).
+**STYLE DIRECTION:** ${style.name}
+${style.focus}
 
-**OUTPUT:**
-Required JSON Output Format (stream ONE object per line):
-\`{ "name": "Variation Name", "html": "..." }\`
-        `.trim();
+**CURRENT HTML TO REDESIGN:**
+\`\`\`html
+${currentArtifact.html.substring(0, 3000)}${currentArtifact.html.length > 3000 ? '...' : ''}
+\`\`\`
 
-        const responseStream = await ai.models.generateContentStream({
-            model: selectedModel,
-             contents: [{ parts: [{ text: prompt }], role: 'user' }],
-             config: { temperature: 1.1 }
-        });
+**INSTRUCTIONS:**
+- Keep the same content and sections but apply a dramatically different visual style
+- Make it mobile responsive
+- Use CSS in a <style> tag
+- Choose appropriate Google Fonts for this style
 
-        for await (const variation of parseJsonStream(responseStream)) {
-            if (variation.name && variation.html) {
-                setComponentVariations(prev => [...prev, variation]);
-            }
-        }
+Return ONLY the complete HTML. No explanations or markdown code blocks.
+            `.trim();
+
+            const response = await ai.models.generateContent({
+                model: selectedModel,
+                contents: { role: 'user', parts: [{ text: prompt }] },
+                config: { temperature: 1.1 }
+            });
+
+            let html = response.text || '';
+            // Clean up code blocks if present
+            if (html.startsWith('```html')) html = html.substring(7).trimStart();
+            if (html.startsWith('```')) html = html.substring(3).trimStart();
+            if (html.endsWith('```')) html = html.substring(0, html.length - 3).trimEnd();
+
+            return { name: style.name, html };
+        };
+
+        // Run all 3 variations in parallel
+        const results = await Promise.all(
+            variationStyles.map(async (style) => {
+                try {
+                    const result = await generateVariation(style);
+                    // Update state as each completes for progressive loading
+                    if (result.html) {
+                        setComponentVariations(prev => [...prev, result]);
+                    }
+                    return result;
+                } catch (e) {
+                    console.error(`Error generating ${style.name}:`, e);
+                    return null;
+                }
+            })
+        );
+
+        console.log(`Generated ${results.filter(Boolean).length} variations`);
     } catch (e: any) {
         console.error("Error generating variations:", e);
     } finally {
@@ -1615,7 +1650,18 @@ Return ONLY RAW HTML.
                             </div>
                         )}
                     </div>
-                
+
+                {/* Multipage Site - Coming Soon */}
+                <button
+                    className="project-indicator disabled"
+                    disabled
+                    title="Coming Soon"
+                    style={{ opacity: 0.5, cursor: 'not-allowed' }}
+                >
+                    <LayersIcon />
+                    Multipage
+                </button>
+
                 {selectedImage && (
                     <div className="image-preview-pill">
                         <img src={selectedImage} alt="Reference" />
