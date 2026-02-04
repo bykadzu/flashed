@@ -1560,14 +1560,8 @@ Return ONLY RAW HTML.
                     {currentSession?.prompt}
                  </div>
                  <div className="action-buttons">
-                    <button onClick={() => {
-                        setCurrentSessionIndex(-1);
-                        setFocusedArtifactIndex(null);
-                    }}>
-                        <HomeIcon /> New
-                    </button>
                     <button onClick={() => setFocusedArtifactIndex(null)}>
-                        <GridIcon /> Grid View
+                        <GridIcon /> Grid
                     </button>
                     <button onClick={handleGenerateVariations} disabled={isLoading}>
                         <SparklesIcon /> Variations
@@ -1575,26 +1569,11 @@ Return ONLY RAW HTML.
                     <button onClick={handleShowCode}>
                         <CodeIcon /> Source
                     </button>
-                    <button onClick={() => setIsShareModalOpen(true)}>
-                        <ShareIcon /> Share
-                    </button>
-                    <button onClick={handleOpenPublishModal}>
-                        <PublishIcon /> Publish
-                    </button>
-                    <button onClick={() => setIsAnalyticsOpen(true)}>
-                        <ChartIcon /> Analytics
-                    </button>
                     <button onClick={handleDownload}>
                         <DownloadIcon /> Download
                     </button>
                     <button onClick={handleSaveToLibrary}>
                         <BookmarkIcon /> Save
-                    </button>
-                    <button onClick={handleShowHistory}>
-                        <HistoryIcon /> History
-                    </button>
-                    <button onClick={() => setIsSettingsOpen(true)}>
-                        <SettingsIcon /> Settings
                     </button>
                  </div>
             </div>
