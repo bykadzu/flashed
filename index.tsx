@@ -1547,48 +1547,37 @@ Return ONLY RAW HTML.
             </div>
 
             <div className="floating-input-container">
-                {/* Project Indicator */}
-                <button 
-                    className="project-indicator"
-                    onClick={() => setIsProjectManagerOpen(true)}
-                    title="Manage Projects"
-                >
-                    <FolderIcon />
-                    {currentProject ? currentProject.name : 'Projects'}
-                </button>
-                
-                {/* Site Mode Toggle */}
-                <div className="site-mode-toggle">
-                    <button 
-                        className={`mode-btn ${!siteMode ? 'active' : ''}`}
-                        onClick={() => setSiteMode(false)}
-                    >
-                        📄 Single Page
-                    </button>
-                    <button 
-                        className={`mode-btn ${siteMode ? 'active' : ''}`}
-                        onClick={() => setSiteMode(true)}
-                    >
-                        🌐 Multi-Page Site
-                    </button>
-                </div>
+                {/* Controls bar - only shown when user has started working */}
+                {hasStarted && (
+                    <div className="input-controls-bar">
+                        {/* Project Indicator */}
+                        <button
+                            className="project-indicator"
+                            onClick={() => setIsProjectManagerOpen(true)}
+                            title="Manage Projects"
+                        >
+                            <FolderIcon />
+                            {currentProject ? currentProject.name : 'Projects'}
+                        </button>
 
-                {/* Page Structure Input (Site Mode Only) */}
-                {siteMode && (
-                    <div className="page-structure-input">
-                        <label htmlFor="page-structure">Page Structure:</label>
-                        <textarea
-                            id="page-structure"
-                            value={pageStructure}
-                            onChange={(e) => setPageStructure(e.target.value)}
-                            placeholder="Home&#10;About&#10;Services&#10;Contact&#10;&#10;(One page per line, or leave empty for defaults)"
-                            rows={4}
-                        />
-                    </div>
-                )}
+                        {/* Site Mode Toggle */}
+                        <div className="site-mode-toggle">
+                            <button
+                                className={`mode-btn ${!siteMode ? 'active' : ''}`}
+                                onClick={() => setSiteMode(false)}
+                            >
+                                📄 Single Page
+                            </button>
+                            <button
+                                className={`mode-btn ${siteMode ? 'active' : ''}`}
+                                onClick={() => setSiteMode(true)}
+                            >
+                                🌐 Multi-Page Site
+                            </button>
+                        </div>
 
-                {/* Brand Kit Selector */}
-                <div className="brand-kit-selector">
+                        {/* Brand Kit Selector */}
+                        <div className="brand-kit-selector">
                         <button 
                             className={`brand-kit-btn ${selectedBrandKit ? 'active' : ''}`}
                             onClick={() => setShowBrandKitDropdown(!showBrandKitDropdown)}
@@ -1641,7 +1630,7 @@ Return ONLY RAW HTML.
                                     </button>
                                 ))}
                                 
-                                <button 
+                                <button
                                     className="brand-kit-dropdown-item create-new"
                                     onClick={() => openBrandKitEditor()}
                                 >
@@ -1649,18 +1638,9 @@ Return ONLY RAW HTML.
                                 </button>
                             </div>
                         )}
+                        </div>
                     </div>
-
-                {/* Multipage Site - Coming Soon */}
-                <button
-                    className="project-indicator disabled"
-                    disabled
-                    title="Coming Soon"
-                    style={{ opacity: 0.5, cursor: 'not-allowed' }}
-                >
-                    <LayersIcon />
-                    Multipage
-                </button>
+                )}
 
                 {selectedImage && (
                     <div className="image-preview-pill">
