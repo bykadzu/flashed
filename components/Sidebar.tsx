@@ -3,6 +3,7 @@
  */
 
 import React from 'react';
+import { UserButton } from '@clerk/clerk-react';
 import {
     HomeIcon,
     FolderIcon,
@@ -121,6 +122,17 @@ export default function Sidebar({
             >
                 <SettingsIcon />
             </button>
+
+            {/* User profile */}
+            <div className="sidebar-user">
+                <UserButton
+                    appearance={{
+                        elements: {
+                            avatarBox: { width: 32, height: 32 }
+                        }
+                    }}
+                />
+            </div>
         </aside>
     );
 }

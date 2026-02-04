@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@clerk/clerk-react": "^5.60.0",
     "@supabase/supabase-js": "^2.93.2",
     "nanoid": "^5.1.6",
     "react": "^19.0.0",

@@ -2989,3 +2989,69 @@ html, body {
     border-top: 1px solid rgba(255, 255, 255, 0.06);
     background: rgba(0, 0, 0, 0.2);
 }
+
+/* === Auth Page === */
+.auth-page {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--app-bg);
+    padding: 20px;
+}
+
+.auth-container {
+    text-align: center;
+    max-width: 400px;
+}
+
+.auth-logo {
+    font-size: 4rem;
+    margin-bottom: 16px;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+.auth-container h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin: 0 0 8px;
+    background: linear-gradient(to bottom right, #fff, #aaa);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.auth-container p {
+    color: var(--text-secondary);
+    margin: 0 0 32px;
+    font-size: 1rem;
+}
+
+.auth-button {
+    background: white;
+    color: black;
+    border: none;
+    padding: 14px 32px;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.auth-button:hover {
+    background: #e5e5e5;
+    transform: translateY(-2px);
+}
+
+/* User button in sidebar */
+.sidebar-user {
+    padding: 8px;
+    display: flex;
+    justify-content: center;
+}

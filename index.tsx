@@ -9,6 +9,7 @@
 import { createOpenRouterClient, DEFAULT_MODEL, getStoredModel, setStoredModel, ModelId } from './lib/openrouter';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
+import { ClerkProvider, SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react';
 
 import { Artifact, Session, ComponentVariation, LayoutOption, BrandKit, Project, Site, SitePage } from './types';
 import { INITIAL_PLACEHOLDERS } from './constants';
@@ -1758,8 +1759,45 @@ Return ONLY RAW HTML.
   );
 }
 
+// Sign-in page for unauthenticated users
+function SignInPage() {
+  return (
+    <div className="auth-page">
+      <div className="auth-container">
+        <div className="auth-logo">⚡</div>
+        <h1>Flashed</h1>
+        <p>Instant landing pages for customer demos</p>
+        <SignInButton mode="modal">
+          <button className="auth-button">Sign In to Continue</button>
+        </SignInButton>
+      </div>
+    </div>
+  );
+}
+
+// Get Clerk publishable key from environment
+const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+
 const rootElement = document.getElementById('root');
 if (rootElement) {
   const root = ReactDOM.createRoot(rootElement);
-  root.render(<React.StrictMode><App /></React.StrictMode>);
+
+  // If no Clerk key, render app without auth (for development)
+  if (!CLERK_PUBLISHABLE_KEY) {
+    console.warn('Clerk publishable key not found. Running without authentication.');
+    root.render(<React.StrictMode><App /></React.StrictMode>);
+  } else {
+    root.render(
+      <React.StrictMode>
+        <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
+          <SignedIn>
+            <App />
+          </SignedIn>
+          <SignedOut>
+            <SignInPage />
+          </SignedOut>
+        </ClerkProvider>
+      </React.StrictMode>
+    );
+  }
 }
