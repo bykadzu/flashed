@@ -1,0 +1,2 @@
+# Exclude lumina_library (separate app, not part of main build)
+lumina_library/

@@ -19,6 +19,12 @@ export default defineConfig(({ mode }) => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
+      },
+      build: {
+        // Exclude lumina_library from the build (it's a separate app)
+        rollupOptions: {
+          external: [/^lumina_library\/.*/],
+        }
       }
     };
 });

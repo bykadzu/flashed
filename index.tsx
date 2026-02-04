@@ -1310,7 +1310,7 @@ Return ONLY RAW HTML.
         )}
 
         {/* Publish Modal */}
-        {focusedArtifactIndex !== null && currentSession && (
+        {focusedArtifactIndex !== null && currentSession && currentSession.artifacts[focusedArtifactIndex] && (
             <PublishModal
                 isOpen={isPublishModalOpen}
                 onClose={() => setIsPublishModalOpen(false)}
@@ -1321,7 +1321,7 @@ Return ONLY RAW HTML.
         )}
 
         {/* Share/Preview Modal */}
-        {focusedArtifactIndex !== null && currentSession && (
+        {focusedArtifactIndex !== null && currentSession && currentSession.artifacts[focusedArtifactIndex] && (
             <ShareModal
                 isOpen={isShareModalOpen}
                 onClose={() => setIsShareModalOpen(false)}
