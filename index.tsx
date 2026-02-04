@@ -41,7 +41,8 @@ import {
     ChartIcon,
     SettingsIcon,
     HomeIcon,
-    LayersIcon
+    LayersIcon,
+    BookmarkIcon
 } from './components/Icons';
 import PublishModal from './components/PublishModal';
 import ShareModal from './components/ShareModal';
@@ -52,6 +53,8 @@ import TemplateLibrary from './components/TemplateLibrary';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import Settings from './components/Settings';
 import Sidebar from './components/Sidebar';
+import HTMLLibrary from './components/HTMLLibrary';
+import * as htmlLibrary from './lib/htmlLibrary';
 
 function App() {
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -112,6 +115,9 @@ function App() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [isProjectManagerOpen, setIsProjectManagerOpen] = useState(false);
+
+  // HTML Library State
+  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
 
   // Settings State
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -510,11 +516,11 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
 
   const handlePublished = (publishInfo: { url: string; shortId: string }) => {
       if (focusedArtifactIndex === null) return;
-      
-      setSessions(prev => prev.map((sess, i) => 
+
+      setSessions(prev => prev.map((sess, i) =>
           i === currentSessionIndex ? {
               ...sess,
-              artifacts: sess.artifacts.map((art, j) => 
+              artifacts: sess.artifacts.map((art, j) =>
                   j === focusedArtifactIndex ? {
                       ...art,
                       publishInfo: {
@@ -527,6 +533,24 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
               )
           } : sess
       ));
+  };
+
+  const handleSaveToLibrary = () => {
+      if (!currentSession || focusedArtifactIndex === null) return;
+      const artifact = currentSession.artifacts[focusedArtifactIndex];
+      if (!artifact?.html) return;
+
+      try {
+          const item = htmlLibrary.createLibraryItem(
+              artifact.html,
+              currentSession.prompt,
+              artifact.seo?.title
+          );
+          htmlLibrary.saveItem(item);
+          alert('Saved to library!');
+      } catch (e: any) {
+          alert(e.message || 'Failed to save');
+      }
   };
 
   const handleRefine = useCallback(async (instruction: string) => {
@@ -1362,6 +1386,12 @@ Return ONLY RAW HTML.
             onSelectTemplate={handleSelectTemplate}
         />
 
+        {/* HTML Library */}
+        <HTMLLibrary
+            isOpen={isLibraryOpen}
+            onClose={() => setIsLibraryOpen(false)}
+        />
+
         {/* Analytics Dashboard */}
         {focusedArtifactIndex !== null && currentSession && (
             <AnalyticsDashboard
@@ -1432,7 +1462,7 @@ Return ONLY RAW HTML.
                 setCurrentSessionIndex(-1);
                 inputRef.current?.focus();
             }}
-            onProjects={() => setIsProjectManagerOpen(true)}
+            onProjects={() => setIsLibraryOpen(true)}
             onHistory={() => setDrawerState({ isOpen: true, mode: 'history', title: 'History', data: null })}
             onShare={() => setIsShareModalOpen(true)}
             onPublish={handleOpenPublishModal}
@@ -1557,6 +1587,9 @@ Return ONLY RAW HTML.
                     <button onClick={handleDownload}>
                         <DownloadIcon /> Download
                     </button>
+                    <button onClick={handleSaveToLibrary}>
+                        <BookmarkIcon /> Save
+                    </button>
                     <button onClick={handleShowHistory}>
                         <HistoryIcon /> History
                     </button>
@@ -1570,22 +1603,6 @@ Return ONLY RAW HTML.
                 {/* Controls bar - only shown when user has started working */}
                 {hasStarted && (
                     <div className="input-controls-bar">
-                        {/* Site Mode Toggle */}
-                        <div className="site-mode-toggle">
-                            <button
-                                className={`mode-btn ${!siteMode ? 'active' : ''}`}
-                                onClick={() => setSiteMode(false)}
-                            >
-                                📄 Single Page
-                            </button>
-                            <button
-                                className={`mode-btn ${siteMode ? 'active' : ''}`}
-                                onClick={() => setSiteMode(true)}
-                            >
-                                🌐 Multi-Page Site
-                            </button>
-                        </div>
-
                         {/* Brand Kit Selector */}
                         <div className="brand-kit-selector">
                         <button 

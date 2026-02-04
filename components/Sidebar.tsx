@@ -66,7 +66,7 @@ export default function Sidebar({
             <button
                 className="sidebar-btn"
                 onClick={onProjects}
-                title="Projects"
+                title="Library"
             >
                 <FolderIcon />
             </button>

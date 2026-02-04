@@ -112,6 +112,21 @@ export interface FormSubmission {
     notified: boolean;
 }
 
+// ============ HTML Library Types ============
+export interface HTMLItem {
+    id: string;
+    title: string;
+    description?: string;
+    content: string; // The raw HTML content
+    createdAt: number;
+    tags: string[];
+    thumbnail?: string; // Optional screenshot/preview
+    size: number;
+    prompt?: string; // Original prompt used to generate
+}
+
+export type LibrarySortOption = 'newest' | 'oldest' | 'name' | 'size';
+
 // ============ Database Types ============
 export interface PublishedPage {
     id: string;
