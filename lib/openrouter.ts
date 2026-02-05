@@ -5,7 +5,7 @@ export const AVAILABLE_MODELS = [
   { id: 'google/gemini-3-flash-preview', name: 'Gemini 3 Flash', provider: 'Google' },
   { id: 'anthropic/claude-sonnet-4.5', name: 'Claude Sonnet 4.5', provider: 'Anthropic' },
   { id: 'x-ai/grok-code-fast-1', name: 'Grok Code Fast', provider: 'xAI' },
-  { id: 'deepseek/deepseek-v3.2', name: 'DeepSeek V3.2', provider: 'DeepSeek' },
+  { id: 'qwen/qwen3-coder-next', name: 'Qwen3 Coder', provider: 'Qwen' },
   { id: 'moonshotai/kimi-k2.5', name: 'Kimi K2.5', provider: 'Moonshot' },
   { id: 'anthropic/claude-opus-4.5', name: 'Claude Opus 4.5', provider: 'Anthropic' },
   { id: 'z-ai/glm-4.7', name: 'GLM 4.7', provider: 'Zhipu' },
