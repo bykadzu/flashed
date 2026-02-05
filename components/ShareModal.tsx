@@ -6,6 +6,7 @@ import React, { useState, useEffect } from 'react';
 import type { Artifact, SEOSettings } from '../types';
 import { prepareHtmlForPublishing, supabase, generateShortId } from '../lib/supabase';
 import { XIcon, CheckIcon, LinkIcon } from './Icons';
+import { COPY_FEEDBACK_DURATION } from '../constants';
 
 interface ShareModalProps {
     isOpen: boolean;
@@ -95,7 +96,7 @@ export default function ShareModal({ isOpen, onClose, artifact, prompt }: ShareM
         if (previewUrl) {
             await navigator.clipboard.writeText(previewUrl);
             setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
+            setTimeout(() => setCopied(false), COPY_FEEDBACK_DURATION);
         }
     };
     
@@ -121,15 +122,27 @@ export default function ShareModal({ isOpen, onClose, artifact, prompt }: ShareM
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
     };
-    
+
+    // Handle escape key
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && isOpen && !isGenerating) {
+                onClose();
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, isGenerating, onClose]);
+
     if (!isOpen) return null;
     
     return (
         <div className="publish-modal-overlay" onClick={onClose}>
-            <div className="publish-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '480px' }}>
+            <div className="publish-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '480px' }} role="dialog" aria-modal="true" aria-labelledby="share-title">
                 <div className="publish-modal-header">
-                    <h2>Share Preview</h2>
-                    <button className="close-button" onClick={onClose}>
+                    <h2 id="share-title">Share Preview</h2>
+                    <button className="close-button" onClick={onClose} aria-label="Close share dialog">
                         <XIcon />
                     </button>
                 </div>

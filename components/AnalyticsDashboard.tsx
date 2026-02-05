@@ -6,6 +6,7 @@ import React, { useState, useEffect } from 'react';
 import type { Artifact } from '../types';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { XIcon, ChartIcon, GlobeIcon } from './Icons';
+import { ONE_WEEK_MS } from '../constants';
 
 interface AnalyticsData {
     totalViews: number;
@@ -83,7 +84,7 @@ export default function AnalyticsDashboard({ isOpen, onClose, artifact }: Analyt
                 .from('page_views')
                 .select('*')
                 .eq('short_id', shortId)
-                .gte('timestamp', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString());
+                .gte('timestamp', new Date(Date.now() - ONE_WEEK_MS).toISOString());
             
             // Fetch form submissions
             const { data: submissions } = await supabase!
@@ -100,8 +101,16 @@ export default function AnalyticsDashboard({ isOpen, onClose, artifact }: Analyt
             (pageViews || []).forEach(view => {
                 const date = new Date(view.timestamp).toLocaleDateString('en-US', { weekday: 'short' });
                 viewsByDay[date] = (viewsByDay[date] || 0) + 1;
-                
-                const referrer = view.referrer ? new URL(view.referrer).hostname : 'direct';
+
+                // Safely parse referrer URL, fallback to 'unknown' for malformed URLs
+                let referrer = 'direct';
+                if (view.referrer) {
+                    try {
+                        referrer = new URL(view.referrer).hostname || 'unknown';
+                    } catch {
+                        referrer = 'unknown';
+                    }
+                }
                 referrerCounts[referrer] = (referrerCounts[referrer] || 0) + 1;
             });
             
@@ -127,19 +136,31 @@ export default function AnalyticsDashboard({ isOpen, onClose, artifact }: Analyt
             setIsLoading(false);
         }
     };
-    
+
+    // Handle escape key
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && isOpen) {
+                onClose();
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, onClose]);
+
     if (!isOpen) return null;
     
     const maxViews = data ? Math.max(...data.viewsByDay.map(d => d.views), 1) : 1;
     
     return (
         <div className="publish-modal-overlay" onClick={onClose}>
-            <div className="publish-modal analytics-modal" onClick={e => e.stopPropagation()}>
+            <div className="publish-modal analytics-modal" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="analytics-title">
                 <div className="publish-modal-header">
-                    <h2>
+                    <h2 id="analytics-title">
                         <ChartIcon /> Analytics
                     </h2>
-                    <button className="close-button" onClick={onClose}>
+                    <button className="close-button" onClick={onClose} aria-label="Close analytics">
                         <XIcon />
                     </button>
                 </div>

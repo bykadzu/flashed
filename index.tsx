@@ -7,13 +7,22 @@
 //Vibe coded by ammaar@google.com
 
 import { createOpenRouterClient, DEFAULT_MODEL, getStoredModel, setStoredModel, ModelId } from './lib/openrouter';
+import { getApiKey, validateEnv, ENV } from './lib/env';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 import { ClerkProvider, SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react';
+import { useAuth } from './lib/useAuth';
 
 import { Artifact, Session, ComponentVariation, LayoutOption, BrandKit, Project, Site, SitePage } from './types';
-import { INITIAL_PLACEHOLDERS } from './constants';
-import { generateId } from './utils';
+import {
+    INITIAL_PLACEHOLDERS,
+    FOCUS_DELAY,
+    PLACEHOLDER_FETCH_DELAY,
+    PLACEHOLDER_CYCLE_INTERVAL,
+    HTML_PREVIEW_MAX_LENGTH,
+    MOBILE_BREAKPOINT
+} from './constants';
+import { generateId, parseDataUrl } from './utils';
 
 import DottedGlowBackground from './components/DottedGlowBackground';
 import ArtifactCard from './components/ArtifactCard';
@@ -55,9 +64,17 @@ import AnalyticsDashboard from './components/AnalyticsDashboard';
 import Settings from './components/Settings';
 import Sidebar from './components/Sidebar';
 import HTMLLibrary from './components/HTMLLibrary';
+import Toast, { useToast } from './components/Toast';
 import * as htmlLibrary from './lib/htmlLibrary';
 
 function App() {
+  // Get current user (safe hook that works with or without Clerk)
+  const { user } = useAuth();
+  const userId = user?.id;
+
+  // Toast notifications
+  const { toasts, dismissToast, showSuccess, showError, showWarning } = useToast();
+
   const [sessions, setSessions] = useState<Session[]>([]);
   const [currentSessionIndex, setCurrentSessionIndex] = useState<number>(-1);
   const [focusedArtifactIndex, setFocusedArtifactIndex] = useState<number | null>(null);
@@ -308,7 +325,7 @@ function App() {
 
   // Fix for mobile: reset scroll when focusing an item to prevent "overscroll" state
   useEffect(() => {
-    if (focusedArtifactIndex !== null && window.innerWidth <= 1024) {
+    if (focusedArtifactIndex !== null && window.innerWidth <= MOBILE_BREAKPOINT) {
         if (gridScrollRef.current) {
             gridScrollRef.current.scrollTop = 0;
         }
@@ -320,7 +337,7 @@ function App() {
   useEffect(() => {
       const interval = setInterval(() => {
           setPlaceholderIndex(prev => (prev + 1) % placeholders.length);
-      }, 3000);
+      }, PLACEHOLDER_CYCLE_INTERVAL);
       return () => clearInterval(interval);
   }, [placeholders.length]);
 
@@ -328,8 +345,7 @@ function App() {
   useEffect(() => {
       const fetchDynamicPlaceholders = async () => {
           try {
-              const apiKey = process.env.API_KEY;
-              if (!apiKey) return;
+              const apiKey = getApiKey();
               const ai = createOpenRouterClient(apiKey);
               const response = await ai.models.generateContent({
                   model: selectedModel,
@@ -353,7 +369,7 @@ function App() {
               console.warn("Silently failed to fetch dynamic placeholders", e);
           }
       };
-      setTimeout(fetchDynamicPlaceholders, 1000);
+      setTimeout(fetchDynamicPlaceholders, PLACEHOLDER_FETCH_DELAY);
   }, []);
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -410,8 +426,7 @@ function App() {
     setDrawerState({ isOpen: true, mode: 'variations', title: 'Variations', data: currentArtifact.id });
 
     try {
-        const apiKey = process.env.API_KEY;
-        if (!apiKey) throw new Error("API_KEY is not configured.");
+        const apiKey = getApiKey();
         const ai = createOpenRouterClient(apiKey);
 
         // Define 3 distinct variation styles
@@ -432,7 +447,7 @@ ${style.focus}
 
 **CURRENT HTML TO REDESIGN:**
 \`\`\`html
-${currentArtifact.html.substring(0, 3000)}${currentArtifact.html.length > 3000 ? '...' : ''}
+${currentArtifact.html.substring(0, HTML_PREVIEW_MAX_LENGTH)}${currentArtifact.html.length > HTML_PREVIEW_MAX_LENGTH ? '...' : ''}
 \`\`\`
 
 **INSTRUCTIONS:**
@@ -470,15 +485,18 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
                     }
                     return result;
                 } catch (e) {
-                    console.error(`Error generating ${style.name}:`, e);
+                    // Individual variation failed, continue with others
                     return null;
                 }
             })
         );
 
-        console.log(`Generated ${results.filter(Boolean).length} variations`);
+        const successCount = results.filter(Boolean).length;
+        if (successCount === 0) {
+            showError('Failed to generate variations. Please try again.');
+        }
     } catch (e: any) {
-        console.error("Error generating variations:", e);
+        showError(e.message || 'Failed to generate variations');
     } finally {
         setIsLoading(false);
     }
@@ -534,6 +552,8 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
               )
           } : sess
       ));
+
+      showSuccess('Page published successfully!');
   };
 
   const handleSaveToLibrary = () => {
@@ -548,9 +568,9 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
               artifact.seo?.title
           );
           htmlLibrary.saveItem(item);
-          alert('Saved to library!');
+          showSuccess('Saved to library!');
       } catch (e: any) {
-          alert(e.message || 'Failed to save');
+          showError(e.message || 'Failed to save to library');
       }
   };
 
@@ -574,10 +594,9 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
       ));
       
       try {
-          const apiKey = process.env.API_KEY;
-          if (!apiKey) throw new Error("API_KEY is not configured.");
+          const apiKey = getApiKey();
           const ai = createOpenRouterClient(apiKey);
-          
+
           const prompt = `
 You are an Expert UI Refiner.
 
@@ -644,7 +663,7 @@ Return ONLY the complete, updated HTML. No explanations or markdown code blocks.
           ));
           
       } catch (e: any) {
-          console.error('Refinement error:', e);
+          showError(e.message || 'Failed to refine design. Please try again.');
           // Restore original state on error
           setSessions(prev => prev.map((sess, i) => 
               i === currentSessionIndex ? {
@@ -762,10 +781,9 @@ Return ONLY the complete, updated HTML. No explanations or markdown code blocks.
       
       // Generate page content
       try {
-          const apiKey = process.env.API_KEY;
-          if (!apiKey) throw new Error("API_KEY is not configured.");
+          const apiKey = getApiKey();
           const ai = createOpenRouterClient(apiKey);
-          
+
           const existingPages = session.site.pages.map(p => `- ${p.name} (/${p.slug})`).join('\n');
           const homeHtml = session.site.pages.find(p => p.isHome)?.html || '';
           
@@ -838,7 +856,7 @@ Return ONLY RAW HTML.
           ));
           
       } catch (e: any) {
-          console.error('Error adding page:', e);
+          showError(e.message || 'Failed to add page. Please try again.');
           setSessions(prev => prev.map(s => 
               s.id === sessionId && s.site ? {
                   ...s,
@@ -910,10 +928,9 @@ Return ONLY RAW HTML.
         
         // Generate site pages
         try {
-            const apiKey = process.env.API_KEY;
-            if (!apiKey) throw new Error("API_KEY is not configured.");
+            const apiKey = getApiKey();
             const ai = createOpenRouterClient(apiKey);
-            
+
             // Determine style for the site
             const stylePrompt = `
 You are an expert Design Strategist.
@@ -1020,8 +1037,8 @@ Return ONLY RAW HTML.
                 ));
             }
             
-        } catch (e) {
-            console.error("Fatal error in site generation", e);
+        } catch (e: any) {
+            showError(e.message || 'Failed to generate site. Please try again.');
         } finally {
             setIsLoading(false);
             setPageStructure('');
@@ -1050,8 +1067,7 @@ Return ONLY RAW HTML.
     setFocusedArtifactIndex(null); 
 
     try {
-        const apiKey = process.env.API_KEY;
-        if (!apiKey) throw new Error("API_KEY is not configured.");
+        const apiKey = getApiKey();
         const ai = createOpenRouterClient(apiKey);
 
         // Phase 1: Determine Styles - UPDATED for Context Awareness
@@ -1078,12 +1094,9 @@ Return ONLY a raw JSON array of 3 strings describing the specific vibes.
         
         // If an image is selected, add it to the request so Gemini can "see" the vibe
         if (selectedImage) {
-            const base64Data = selectedImage.split(',')[1];
+            const { mimeType, data } = parseDataUrl(selectedImage);
             styleRequestParts.push({
-                inlineData: {
-                    mimeType: 'image/jpeg', // Assuming jpeg for simplicity, or extract from string
-                    data: base64Data
-                }
+                inlineData: { mimeType, data }
             });
         }
 
@@ -1195,10 +1208,10 @@ Return ONLY RAW HTML.
           
                 const generationParts: any[] = [{ text: prompt }];
                 if (selectedImage) {
-                     const base64Data = selectedImage.split(',')[1];
-                     generationParts.push({
-                        inlineData: { mimeType: 'image/jpeg', data: base64Data }
-                     });
+                    const { mimeType, data } = parseDataUrl(selectedImage);
+                    generationParts.push({
+                        inlineData: { mimeType, data }
+                    });
                 }
 
                 const responseStream = await ai.models.generateContentStream({
@@ -1238,11 +1251,11 @@ Return ONLY RAW HTML.
                 ));
 
             } catch (e: any) {
-                console.error('Error generating artifact:', e);
-                setSessions(prev => prev.map(sess => 
+                showError(`Failed to generate ${artifact.styleName} variation`);
+                setSessions(prev => prev.map(sess =>
                     sess.id === sessionId ? {
                         ...sess,
-                        artifacts: sess.artifacts.map(art => 
+                        artifacts: sess.artifacts.map(art =>
                             art.id === artifact.id ? { ...art, html: `<div style="color: #ff6b6b; padding: 20px;">Error: ${e.message}</div>`, status: 'error' } : art
                         )
                     } : sess
@@ -1252,11 +1265,11 @@ Return ONLY RAW HTML.
 
         await Promise.all(placeholderArtifacts.map((art, i) => generateArtifact(art, generatedStyles[i])));
 
-    } catch (e) {
-        console.error("Fatal error in generation process", e);
+    } catch (e: any) {
+        showError(e.message || 'Failed to generate designs. Please try again.');
     } finally {
         setIsLoading(false);
-        setTimeout(() => inputRef.current?.focus(), 100);
+        setTimeout(() => inputRef.current?.focus(), FOCUS_DELAY);
     }
   }, [inputValue, urlValue, selectedImage, isLoading, sessions.length, selectedModel, selectedBrandKit, cloneMode]);
 
@@ -1269,7 +1282,7 @@ Return ONLY RAW HTML.
   const handleSelectTemplate = (prompt: string) => {
       setInputValue(prompt);
       // Focus the input so user can modify if needed
-      setTimeout(() => inputRef.current?.focus(), 100);
+      setTimeout(() => inputRef.current?.focus(), FOCUS_DELAY);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -1343,6 +1356,7 @@ Return ONLY RAW HTML.
                 artifact={currentSession.artifacts[focusedArtifactIndex]}
                 prompt={currentSession.prompt}
                 onPublished={handlePublished}
+                userId={userId}
             />
         )}
 
@@ -1653,7 +1667,7 @@ Return ONLY RAW HTML.
                     <div className="image-preview-pill">
                         <img src={selectedImage} alt="Reference" />
                         <span>Attached Image</span>
-                        <button onClick={clearImage} className="clear-image-btn"><XIcon /></button>
+                        <button onClick={clearImage} className="clear-image-btn" aria-label="Remove attached image"><XIcon /></button>
                     </div>
                 )}
                 
@@ -1674,11 +1688,12 @@ Return ONLY RAW HTML.
                                 accept="image/*" 
                                 onChange={handleContextImageSelect} 
                             />
-                            <button 
-                                className="link-button" 
+                            <button
+                                className="link-button"
                                 onClick={() => fileInputRef.current?.click()}
                                 title="Attach image reference"
-                                style={{ 
+                                aria-label="Attach image reference"
+                                style={{
                                     background: selectedImage ? 'rgba(74, 222, 128, 0.1)' : 'transparent',
                                     color: selectedImage ? '#4ade80' : 'var(--text-secondary)'
                                 }}
@@ -1686,11 +1701,12 @@ Return ONLY RAW HTML.
                                 <UploadIcon />
                             </button>
 
-                            <button 
-                                className="link-button" 
+                            <button
+                                className="link-button"
                                 onClick={() => setShowUrlInput(!showUrlInput)}
                                 title="Add website context (URL)"
-                                style={{ 
+                                aria-label="Add website URL context"
+                                style={{
                                     background: showUrlInput ? 'rgba(255,255,255,0.2)' : 'transparent',
                                     color: urlValue ? '#4ade80' : 'var(--text-secondary)'
                                 }}
@@ -1749,12 +1765,15 @@ Return ONLY RAW HTML.
                             <ThinkingIcon />
                         </div>
                     )}
-                    <button className="send-button" onClick={() => handleSendMessage()} disabled={isLoading || !inputValue.trim()}>
+                    <button className="send-button" onClick={() => handleSendMessage()} disabled={isLoading || !inputValue.trim()} aria-label="Send message">
                         <ArrowUpIcon />
                     </button>
                 </div>
             </div>
         </div>
+
+        {/* Toast Notifications */}
+        <Toast toasts={toasts} onDismiss={dismissToast} />
     </>
   );
 }
@@ -1775,29 +1794,108 @@ function SignInPage() {
   );
 }
 
+// Environment configuration error page
+function EnvErrorPage({ missing, warnings }: { missing: string[]; warnings: string[] }) {
+  return (
+    <div className="auth-page">
+      <div className="auth-container" style={{ maxWidth: '500px', textAlign: 'left' }}>
+        <div className="auth-logo">⚠️</div>
+        <h1 style={{ color: '#ef4444' }}>Configuration Error</h1>
+        <p style={{ marginBottom: '24px' }}>
+          Flashed cannot start because required environment variables are missing.
+        </p>
+
+        {missing.length > 0 && (
+          <div style={{ marginBottom: '16px' }}>
+            <strong style={{ color: '#ef4444' }}>Missing (Required):</strong>
+            <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
+              {missing.map(key => (
+                <li key={key} style={{ color: '#fca5a5' }}>{key}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {warnings.length > 0 && (
+          <div style={{ marginBottom: '16px' }}>
+            <strong style={{ color: '#f59e0b' }}>Missing (Recommended):</strong>
+            <ul style={{ margin: '8px 0', paddingLeft: '20px' }}>
+              {warnings.map(key => (
+                <li key={key} style={{ color: '#fcd34d' }}>{key}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div style={{
+          background: 'rgba(255,255,255,0.05)',
+          padding: '16px',
+          borderRadius: '8px',
+          marginTop: '16px'
+        }}>
+          <strong>To fix this:</strong>
+          <ol style={{ margin: '8px 0', paddingLeft: '20px', lineHeight: 1.6 }}>
+            <li>Copy <code>.env.example</code> to <code>.env.local</code></li>
+            <li>Fill in the missing values</li>
+            <li>Restart the development server</li>
+          </ol>
+          <p style={{ marginTop: '12px', fontSize: '0.875rem', color: 'rgba(255,255,255,0.6)' }}>
+            Get your OpenRouter API key at{' '}
+            <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer"
+               style={{ color: '#60a5fa' }}>
+              openrouter.ai/keys
+            </a>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // Get Clerk publishable key from environment
-const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
+const CLERK_PUBLISHABLE_KEY = ENV.CLERK_PUBLISHABLE_KEY;
+
+// Validate environment on startup
+const envValidation = validateEnv();
 
 const rootElement = document.getElementById('root');
 if (rootElement) {
   const root = ReactDOM.createRoot(rootElement);
 
-  // If no Clerk key, render app without auth (for development)
-  if (!CLERK_PUBLISHABLE_KEY) {
-    console.warn('Clerk publishable key not found. Running without authentication.');
-    root.render(<React.StrictMode><App /></React.StrictMode>);
-  } else {
+  // Show error page if critical env vars are missing
+  if (!envValidation.valid) {
     root.render(
       <React.StrictMode>
-        <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
-          <SignedIn>
-            <App />
-          </SignedIn>
-          <SignedOut>
-            <SignInPage />
-          </SignedOut>
-        </ClerkProvider>
+        <EnvErrorPage missing={envValidation.missing} warnings={envValidation.warnings} />
       </React.StrictMode>
     );
+  } else {
+    // Log warnings for missing optional vars
+    if (envValidation.warnings.length > 0) {
+      console.warn(
+        'Optional environment variables not configured:',
+        envValidation.warnings.join(', '),
+        '- Some features may be limited.'
+      );
+    }
+
+    // If no Clerk key, render app without auth (for development)
+    if (!CLERK_PUBLISHABLE_KEY) {
+      console.warn('Clerk publishable key not found. Running without authentication.');
+      root.render(<React.StrictMode><App /></React.StrictMode>);
+    } else {
+      root.render(
+        <React.StrictMode>
+          <ClerkProvider publishableKey={CLERK_PUBLISHABLE_KEY}>
+            <SignedIn>
+              <App />
+            </SignedIn>
+            <SignedOut>
+              <SignInPage />
+            </SignedOut>
+          </ClerkProvider>
+        </React.StrictMode>
+      );
+    }
   }
 }

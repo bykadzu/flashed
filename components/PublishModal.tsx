@@ -6,6 +6,7 @@ import React, { useState, useEffect } from 'react';
 import type { Artifact, SEOSettings, FormSettings } from '../types';
 import { publishPage, isSupabaseConfigured, downloadWithSEO, generateShortId } from '../lib/supabase';
 import { XIcon, CheckIcon } from './Icons';
+import { COPY_FEEDBACK_DURATION } from '../constants';
 
 interface PublishModalProps {
     isOpen: boolean;
@@ -13,11 +14,12 @@ interface PublishModalProps {
     artifact: Artifact;
     prompt: string;
     onPublished: (publishInfo: { url: string; shortId: string }) => void;
+    userId?: string;
 }
 
 type TabType = 'seo' | 'forms' | 'domain' | 'publish';
 
-export default function PublishModal({ isOpen, onClose, artifact, prompt, onPublished }: PublishModalProps) {
+export default function PublishModal({ isOpen, onClose, artifact, prompt, onPublished, userId }: PublishModalProps) {
     const [activeTab, setActiveTab] = useState<TabType>('seo');
     const [isPublishing, setIsPublishing] = useState(false);
     const [publishedUrl, setPublishedUrl] = useState<string | null>(null);
@@ -59,9 +61,14 @@ export default function PublishModal({ isOpen, onClose, artifact, prompt, onPubl
     const handlePublish = async () => {
         setIsPublishing(true);
         setError(null);
-        
-        const result = await publishPage(artifact, seo, formSettings.enabled ? formSettings : undefined);
-        
+
+        const result = await publishPage(
+            artifact,
+            seo,
+            formSettings.enabled ? formSettings : undefined,
+            userId
+        );
+
         if ('error' in result) {
             setError(result.error);
             setIsPublishing(false);
@@ -82,20 +89,32 @@ export default function PublishModal({ isOpen, onClose, artifact, prompt, onPubl
         if (publishedUrl) {
             await navigator.clipboard.writeText(publishedUrl);
             setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
+            setTimeout(() => setCopied(false), COPY_FEEDBACK_DURATION);
         }
     };
-    
+
+    // Handle escape key
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && isOpen && !isPublishing) {
+                onClose();
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, isPublishing, onClose]);
+
     if (!isOpen) return null;
     
     const supabaseConfigured = isSupabaseConfigured();
     
     return (
         <div className="publish-modal-overlay" onClick={onClose}>
-            <div className="publish-modal" onClick={e => e.stopPropagation()}>
+            <div className="publish-modal" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="publish-title">
                 <div className="publish-modal-header">
-                    <h2>Publish Page</h2>
-                    <button className="close-button" onClick={onClose}>
+                    <h2 id="publish-title">Publish Page</h2>
+                    <button className="close-button" onClick={onClose} aria-label="Close publish dialog">
                         <XIcon />
                     </button>
                 </div>

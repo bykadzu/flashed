@@ -1,4 +1,6 @@
 {
+  "include": ["*.ts", "*.tsx", "components/**/*", "lib/**/*"],
+  "exclude": ["node_modules", "dist", "supabase", "lumina_library"],
   "compilerOptions": {
     "target": "ES2022",
     "experimentalDecorators": true,
@@ -11,7 +13,8 @@
     ],
     "skipLibCheck": true,
     "types": [
-      "node"
+      "node",
+      "vite/client"
     ],
     "moduleResolution": "bundler",
     "isolatedModules": true,
@@ -24,6 +27,12 @@
       ]
     },
     "allowImportingTsExtensions": true,
-    "noEmit": true
+    "noEmit": true,
+
+    /* Strict Type-Checking Options */
+    "strict": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true
   }
 }

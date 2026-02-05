@@ -86,17 +86,29 @@ export default function ProjectManager({
         setEditingProject(project || null);
         setMode('edit');
     };
-    
+
+    // Handle escape key
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && isOpen) {
+                onClose();
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, onClose]);
+
     if (!isOpen) return null;
-    
+
     return (
         <div className="publish-modal-overlay" onClick={onClose}>
-            <div className="publish-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+            <div className="publish-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }} role="dialog" aria-modal="true" aria-labelledby="projects-title">
                 <div className="publish-modal-header">
-                    <h2>
+                    <h2 id="projects-title">
                         {mode === 'list' ? 'Projects' : (editingProject ? 'Edit Project' : 'New Project')}
                     </h2>
-                    <button className="close-button" onClick={onClose}>
+                    <button className="close-button" onClick={onClose} aria-label="Close projects">
                         <XIcon />
                     </button>
                 </div>

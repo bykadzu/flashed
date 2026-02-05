@@ -5,32 +5,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { HTMLItem, LibrarySortOption } from '../types';
 import * as library from '../lib/htmlLibrary';
-import { XIcon, DownloadIcon } from './Icons';
-
-// Search icon
-const SearchIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="11" cy="11" r="8"></circle>
-        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-    </svg>
-);
-
-// Trash icon
-const TrashIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <polyline points="3 6 5 6 21 6"></polyline>
-        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-    </svg>
-);
-
-// Layers icon for empty state
-const LayersIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
-        <polyline points="2 17 12 22 22 17"></polyline>
-        <polyline points="2 12 12 17 22 12"></polyline>
-    </svg>
-);
+import { XIcon, DownloadIcon, SearchIcon, TrashIcon, LayersIcon } from './Icons';
+import ConfirmModal from './ConfirmModal';
 
 interface HTMLLibraryProps {
     isOpen: boolean;
@@ -43,6 +19,7 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem }: HTMLLibra
     const [searchQuery, setSearchQuery] = useState('');
     const [sortOption, setSortOption] = useState<LibrarySortOption>('newest');
     const [selectedItem, setSelectedItem] = useState<HTMLItem | null>(null);
+    const [itemToDelete, setItemToDelete] = useState<HTMLItem | null>(null);
 
     // Load library on open
     useEffect(() => {
@@ -50,6 +27,18 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem }: HTMLLibra
             setItems(library.getLibrary());
         }
     }, [isOpen]);
+
+    // Handle escape key
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && isOpen) {
+                onClose();
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, onClose]);
 
     const filteredItems = useMemo(() => {
         let result = items.filter(item => {
@@ -72,13 +61,18 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem }: HTMLLibra
         });
     }, [items, searchQuery, sortOption]);
 
-    const handleDelete = (id: string) => {
-        if (confirm('Delete this page from library?')) {
-            const updated = library.deleteItem(id);
+    const handleDeleteClick = (item: HTMLItem) => {
+        setItemToDelete(item);
+    };
+
+    const handleConfirmDelete = () => {
+        if (itemToDelete) {
+            const updated = library.deleteItem(itemToDelete.id);
             setItems(updated);
-            if (selectedItem?.id === id) {
+            if (selectedItem?.id === itemToDelete.id) {
                 setSelectedItem(null);
             }
+            setItemToDelete(null);
         }
     };
 
@@ -110,14 +104,14 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem }: HTMLLibra
 
     return (
         <div className="library-overlay" onClick={onClose}>
-            <div className="library-modal" onClick={e => e.stopPropagation()}>
+            <div className="library-modal" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="library-title">
                 {/* Header */}
                 <div className="library-header">
                     <div>
-                        <h2>Your Library</h2>
+                        <h2 id="library-title">Your Library</h2>
                         <p className="library-subtitle">{items.length} saved pages</p>
                     </div>
-                    <button className="close-button" onClick={onClose}>
+                    <button className="close-button" onClick={onClose} aria-label="Close library">
                         <XIcon />
                     </button>
                 </div>
@@ -192,12 +186,14 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem }: HTMLLibra
                                         <button
                                             onClick={(e) => { e.stopPropagation(); handleDownload(item); }}
                                             title="Download"
+                                            aria-label="Download page"
                                         >
                                             <DownloadIcon />
                                         </button>
                                         <button
-                                            onClick={(e) => { e.stopPropagation(); handleDelete(item.id); }}
+                                            onClick={(e) => { e.stopPropagation(); handleDeleteClick(item); }}
                                             title="Delete"
+                                            aria-label="Delete page"
                                             className="delete-btn"
                                         >
                                             <TrashIcon />
@@ -249,6 +245,18 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem }: HTMLLibra
                     </div>
                 )}
             </div>
+
+            {/* Delete Confirmation Modal */}
+            <ConfirmModal
+                isOpen={!!itemToDelete}
+                onClose={() => setItemToDelete(null)}
+                onConfirm={handleConfirmDelete}
+                title="Delete Page"
+                message={`Are you sure you want to delete "${itemToDelete?.title || 'this page'}" from your library? This action cannot be undone.`}
+                confirmText="Delete"
+                cancelText="Cancel"
+                variant="danger"
+            />
         </div>
     );
 }

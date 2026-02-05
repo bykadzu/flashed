@@ -56,10 +56,11 @@ export default function RefineInput({ isVisible, isRefining, onRefine, placehold
                             placeholder={placeholder || "Refine: 'Make the hero more minimal' or 'Change to blue theme'"}
                             disabled={isRefining}
                         />
-                        <button 
+                        <button
                             className="refine-btn"
                             onClick={handleSubmit}
                             disabled={isRefining || !value.trim()}
+                            aria-label="Submit refinement"
                         >
                             <ArrowUpIcon />
                         </button>

@@ -2,7 +2,7 @@
  * TemplateLibrary - Pre-built templates organized by industry
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { XIcon, TemplateIcon } from './Icons';
 
 interface Template {
@@ -236,17 +236,29 @@ export default function TemplateLibrary({ isOpen, onClose, onSelectTemplate }: T
         onSelectTemplate(template.prompt);
         onClose();
     };
-    
+
+    // Handle escape key
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && isOpen) {
+                onClose();
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, onClose]);
+
     if (!isOpen) return null;
-    
+
     return (
         <div className="publish-modal-overlay" onClick={onClose}>
-            <div className="publish-modal template-library-modal" onClick={e => e.stopPropagation()}>
+            <div className="publish-modal template-library-modal" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="template-title">
                 <div className="publish-modal-header">
-                    <h2>
+                    <h2 id="template-title">
                         <TemplateIcon /> Template Library
                     </h2>
-                    <button className="close-button" onClick={onClose}>
+                    <button className="close-button" onClick={onClose} aria-label="Close template library">
                         <XIcon />
                     </button>
                 </div>

@@ -103,15 +103,27 @@ export default function BrandKitEditor({
             }
         }
     };
-    
+
+    // Handle escape key
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && isOpen) {
+                onClose();
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [isOpen, onClose]);
+
     if (!isOpen) return null;
-    
+
     return (
         <div className="publish-modal-overlay" onClick={onClose}>
-            <div className="publish-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }}>
+            <div className="publish-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: '500px' }} role="dialog" aria-modal="true" aria-labelledby="brandkit-title">
                 <div className="publish-modal-header">
-                    <h2>{currentBrandKit ? 'Edit Brand Kit' : 'Create Brand Kit'}</h2>
-                    <button className="close-button" onClick={onClose}>
+                    <h2 id="brandkit-title">{currentBrandKit ? 'Edit Brand Kit' : 'Create Brand Kit'}</h2>
+                    <button className="close-button" onClick={onClose} aria-label="Close brand kit editor">
                         <XIcon />
                     </button>
                 </div>

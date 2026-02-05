@@ -4,6 +4,23 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 
+// UI Timing Constants (in milliseconds)
+export const TOAST_DURATION_DEFAULT = 3000;
+export const TOAST_DURATION_ERROR = 6000;
+export const COPY_FEEDBACK_DURATION = 2000;
+export const FOCUS_DELAY = 100;
+export const PLACEHOLDER_FETCH_DELAY = 1000;
+export const PLACEHOLDER_CYCLE_INTERVAL = 3000;
+
+// Content Limits
+export const HTML_PREVIEW_MAX_LENGTH = 3000;
+
+// Responsive Breakpoints (in pixels)
+export const MOBILE_BREAKPOINT = 1024;
+
+// Time Constants
+export const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+
 export const INITIAL_PLACEHOLDERS = [
     "Landing page for an AI agent automation platform",
     "Series A Fintech dashboard waiting list",

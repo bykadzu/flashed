@@ -6,6 +6,27 @@
 
 export const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
 
+/**
+ * Extracts MIME type from a base64 data URL string
+ * @param dataUrl - Data URL string (e.g., "data:image/png;base64,...")
+ * @returns MIME type string (e.g., "image/png") or fallback to "image/jpeg"
+ */
+export function getMimeTypeFromDataUrl(dataUrl: string): string {
+    const match = dataUrl.match(/^data:([^;]+);base64,/);
+    return match?.[1] ?? 'image/jpeg';
+}
+
+/**
+ * Extracts base64 data and MIME type from a data URL
+ * @param dataUrl - Data URL string
+ * @returns Object with mimeType and base64 data
+ */
+export function parseDataUrl(dataUrl: string): { mimeType: string; data: string } {
+    const mimeType = getMimeTypeFromDataUrl(dataUrl);
+    const data = dataUrl.split(',')[1] || '';
+    return { mimeType, data };
+}
+
 export const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
     const image = new Image()

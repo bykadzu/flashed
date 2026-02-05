@@ -4,6 +4,7 @@
 
 import React from 'react';
 import { UserButton } from '@clerk/clerk-react';
+import { isClerkConfigured } from '../lib/env';
 import {
     HomeIcon,
     FolderIcon,
@@ -11,16 +12,9 @@ import {
     ShareIcon,
     PublishIcon,
     ChartIcon,
-    SettingsIcon
+    SettingsIcon,
+    PlusIcon
 } from './Icons';
-
-// Plus icon for New button
-const PlusIcon = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <line x1="12" y1="5" x2="12" y2="19"></line>
-        <line x1="5" y1="12" x2="19" y2="12"></line>
-    </svg>
-);
 
 interface SidebarProps {
     onHome: () => void;
@@ -46,12 +40,13 @@ export default function Sidebar({
     hasArtifact
 }: SidebarProps) {
     return (
-        <aside className="sidebar">
+        <aside className="sidebar" role="navigation" aria-label="Main navigation">
             {/* Top section */}
             <button
                 className="sidebar-btn logo"
                 onClick={onHome}
                 title="Home"
+                aria-label="Home"
             >
                 ⚡
             </button>
@@ -60,6 +55,7 @@ export default function Sidebar({
                 className="sidebar-btn"
                 onClick={onNew}
                 title="New Page"
+                aria-label="New Page"
             >
                 <PlusIcon />
             </button>
@@ -68,6 +64,7 @@ export default function Sidebar({
                 className="sidebar-btn"
                 onClick={onProjects}
                 title="Library"
+                aria-label="Library"
             >
                 <FolderIcon />
             </button>
@@ -76,6 +73,7 @@ export default function Sidebar({
                 className="sidebar-btn"
                 onClick={onHistory}
                 title="History"
+                aria-label="History"
             >
                 <HistoryIcon />
             </button>
@@ -84,19 +82,21 @@ export default function Sidebar({
 
             {/* Middle section - artifact actions */}
             <button
-                className={`sidebar-btn ${!hasArtifact ? 'disabled' : ''}`}
-                onClick={hasArtifact ? onShare : undefined}
+                className="sidebar-btn"
+                onClick={onShare}
                 title={hasArtifact ? "Share" : "Share (generate a page first)"}
                 disabled={!hasArtifact}
+                aria-label="Share"
             >
                 <ShareIcon />
             </button>
 
             <button
-                className={`sidebar-btn ${!hasArtifact ? 'disabled' : ''}`}
-                onClick={hasArtifact ? onPublish : undefined}
+                className="sidebar-btn"
+                onClick={onPublish}
                 title={hasArtifact ? "Publish" : "Publish (generate a page first)"}
                 disabled={!hasArtifact}
+                aria-label="Publish"
             >
                 <PublishIcon />
             </button>
@@ -105,6 +105,7 @@ export default function Sidebar({
                 className="sidebar-btn"
                 onClick={onAnalytics}
                 title="Analytics"
+                aria-label="Analytics"
             >
                 <ChartIcon />
             </button>
@@ -119,20 +120,23 @@ export default function Sidebar({
                 className="sidebar-btn"
                 onClick={onSettings}
                 title="Settings"
+                aria-label="Settings"
             >
                 <SettingsIcon />
             </button>
 
-            {/* User profile */}
-            <div className="sidebar-user">
-                <UserButton
-                    appearance={{
-                        elements: {
-                            avatarBox: { width: 32, height: 32 }
-                        }
-                    }}
-                />
-            </div>
+            {/* User profile - only show when Clerk is configured */}
+            {isClerkConfigured() && (
+                <div className="sidebar-user">
+                    <UserButton
+                        appearance={{
+                            elements: {
+                                avatarBox: { width: 32, height: 32 }
+                            }
+                        }}
+                    />
+                </div>
+            )}
         </aside>
     );
 }

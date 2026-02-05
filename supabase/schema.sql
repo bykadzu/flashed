@@ -168,6 +168,19 @@ CREATE TRIGGER update_projects_updated_at
     FOR EACH ROW
     EXECUTE FUNCTION update_updated_at_column();
 
+-- Function to increment page views (called by Edge Function)
+CREATE OR REPLACE FUNCTION increment_page_views(page_uuid UUID)
+RETURNS void AS $$
+BEGIN
+    UPDATE published_pages
+    SET views = views + 1
+    WHERE id = page_uuid;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Grant execute permission to service role
+GRANT EXECUTE ON FUNCTION increment_page_views(UUID) TO service_role;
+
 -- Edge Function for serving published pages (create this in Supabase Edge Functions)
 -- This is a reference - actual edge function code goes in supabase/functions/serve-page/index.ts
 COMMENT ON TABLE published_pages IS 'Stores HTML content for published landing pages. short_id is used in URLs like flashed.app/p/{short_id}';

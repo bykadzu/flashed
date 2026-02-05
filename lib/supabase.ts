@@ -10,9 +10,13 @@ import type { Artifact, SEOSettings, FormSettings, PublishedPage } from '../type
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
 
-export const supabase = supabaseUrl && supabaseAnonKey 
+export const supabase = supabaseUrl && supabaseAnonKey
     ? createClient(supabaseUrl, supabaseAnonKey)
     : null;
+
+// Construct Edge Functions base URL from Supabase URL
+// e.g., https://abc123.supabase.co -> https://abc123.supabase.co/functions/v1
+const edgeFunctionsUrl = supabaseUrl ? `${supabaseUrl}/functions/v1` : '';
 
 // Check if Supabase is configured
 export const isSupabaseConfigured = () => {
@@ -158,13 +162,13 @@ export const prepareHtmlForPublishing = (
         }
     }
     
-    // Add simple analytics script
-    if (shortId) {
+    // Add analytics tracking script (only if Supabase is configured)
+    if (shortId && edgeFunctionsUrl) {
         const analyticsScript = doc.createElement('script');
         analyticsScript.textContent = `
             (function() {
                 try {
-                    fetch('/api/track', {
+                    fetch('${edgeFunctionsUrl}/track', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -186,7 +190,8 @@ export const prepareHtmlForPublishing = (
 export const publishPage = async (
     artifact: Artifact,
     seo: SEOSettings,
-    formSettings?: FormSettings
+    formSettings?: FormSettings,
+    userId?: string
 ): Promise<{ url: string; shortId: string } | { error: string }> => {
     if (!supabase) {
         // Fallback: Generate a data URL for download if Supabase isn't configured
@@ -204,7 +209,7 @@ export const publishPage = async (
             .eq('short_id', shortId)
             .single();
         
-        const pageData = {
+        const pageData: Record<string, any> = {
             short_id: shortId,
             html: preparedHtml,
             seo_title: seo.title,
@@ -214,6 +219,11 @@ export const publishPage = async (
             updated_at: new Date().toISOString(),
             version: existing ? existing.version + 1 : 1
         };
+
+        // Associate with user if logged in
+        if (userId) {
+            pageData.user_id = userId;
+        }
         
         let result;
         if (existing) {
