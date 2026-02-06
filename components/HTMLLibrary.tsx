@@ -2,16 +2,16 @@
  * HTMLLibrary - Visual library of saved HTML pages
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { HTMLItem, LibrarySortOption } from '../types';
 import * as library from '../lib/htmlLibrary';
-import { XIcon, DownloadIcon, SearchIcon, TrashIcon, LayersIcon } from './Icons';
+import { XIcon, DownloadIcon, SearchIcon, TrashIcon, LayersIcon, UploadIcon } from './Icons';
 import ConfirmModal from './ConfirmModal';
 
 interface HTMLLibraryProps {
     isOpen: boolean;
     onClose: () => void;
-    onSelectItem?: (item: HTMLItem) => void;
+    onSelectItem?: (item: HTMLItem, preserveStyling: boolean) => void;
 }
 
 export default function HTMLLibrary({ isOpen, onClose, onSelectItem }: HTMLLibraryProps) {
@@ -20,6 +20,9 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem }: HTMLLibra
     const [sortOption, setSortOption] = useState<LibrarySortOption>('newest');
     const [selectedItem, setSelectedItem] = useState<HTMLItem | null>(null);
     const [itemToDelete, setItemToDelete] = useState<HTMLItem | null>(null);
+    const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
+    const [preserveStyling, setPreserveStyling] = useState(true);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Load library on open
     useEffect(() => {
@@ -32,13 +35,30 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem }: HTMLLibra
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape' && isOpen) {
-                onClose();
+                if (isSortDropdownOpen) {
+                    setIsSortDropdownOpen(false);
+                } else {
+                    onClose();
+                }
             }
         };
 
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, onClose]);
+    }, [isOpen, onClose, isSortDropdownOpen]);
+
+    // Close sort dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            if (isSortDropdownOpen && !target.closest('.library-sort-dropdown')) {
+                setIsSortDropdownOpen(false);
+            }
+        };
+
+        document.addEventListener('click', handleClickOutside);
+        return () => document.removeEventListener('click', handleClickOutside);
+    }, [isSortDropdownOpen]);
 
     const filteredItems = useMemo(() => {
         let result = items.filter(item => {
@@ -60,6 +80,44 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem }: HTMLLibra
             }
         });
     }, [items, searchQuery, sortOption]);
+
+    const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        let uploadCount = 0;
+
+        for (const file of Array.from(files)) {
+            if (!file.name.endsWith('.html') && !file.name.endsWith('.htm')) continue;
+
+            try {
+                const content = await file.text();
+                // Extract title from HTML or use filename
+                const titleMatch = content.match(/<title>([^<]*)<\/title>/i);
+                const title = titleMatch ? titleMatch[1].trim() : file.name.replace(/\.html?$/i, '');
+
+                const item = library.createLibraryItem(
+                    content,
+                    `Uploaded from ${file.name}`,
+                    title,
+                    ['uploaded']
+                );
+                library.saveItem(item);
+                uploadCount++;
+            } catch (err) {
+                console.error(`Failed to read file: ${file.name}`, err);
+            }
+        }
+
+        if (uploadCount > 0) {
+            setItems(library.getLibrary());
+        }
+
+        // Reset file input
+        if (fileInputRef.current) {
+            fileInputRef.current.value = '';
+        }
+    };
 
     const handleDeleteClick = (item: HTMLItem) => {
         setItemToDelete(item);
@@ -127,16 +185,54 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem }: HTMLLibra
                             onChange={(e) => setSearchQuery(e.target.value)}
                         />
                     </div>
-                    <select
-                        value={sortOption}
-                        onChange={(e) => setSortOption(e.target.value as LibrarySortOption)}
-                        className="library-sort"
+                    <div className="library-sort-dropdown">
+                        <button
+                            className="library-sort-btn"
+                            onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
+                            aria-expanded={isSortDropdownOpen}
+                            aria-haspopup="listbox"
+                        >
+                            <span>{sortOption === 'newest' ? 'Newest' : sortOption === 'oldest' ? 'Oldest' : sortOption === 'name' ? 'Name' : 'Size'}</span>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M6 9l6 6 6-6"/>
+                            </svg>
+                        </button>
+                        {isSortDropdownOpen && (
+                            <div className="library-sort-options" role="listbox">
+                                {(['newest', 'oldest', 'name', 'size'] as LibrarySortOption[]).map(option => (
+                                    <button
+                                        key={option}
+                                        className={`library-sort-option ${sortOption === option ? 'active' : ''}`}
+                                        onClick={() => {
+                                            setSortOption(option);
+                                            setIsSortDropdownOpen(false);
+                                        }}
+                                        role="option"
+                                        aria-selected={sortOption === option}
+                                    >
+                                        {option === 'newest' ? 'Newest' : option === 'oldest' ? 'Oldest' : option === 'name' ? 'Name' : 'Size'}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Upload Button */}
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleUpload}
+                        accept=".html,.htm"
+                        multiple
+                        style={{ display: 'none' }}
+                    />
+                    <button
+                        className="library-upload-btn"
+                        onClick={() => fileInputRef.current?.click()}
+                        aria-label="Upload HTML files"
                     >
-                        <option value="newest">Newest</option>
-                        <option value="oldest">Oldest</option>
-                        <option value="name">Name</option>
-                        <option value="size">Size</option>
-                    </select>
+                        <UploadIcon /> Upload
+                    </button>
                 </div>
 
                 {/* Content */}
@@ -221,7 +317,7 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem }: HTMLLibra
                                     <button
                                         className="primary"
                                         onClick={() => {
-                                            onSelectItem(selectedItem);
+                                            onSelectItem(selectedItem, preserveStyling);
                                             onClose();
                                         }}
                                     >
@@ -230,6 +326,21 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem }: HTMLLibra
                                 )}
                             </div>
                         </div>
+
+                        {/* Styling Toggle */}
+                        {onSelectItem && (
+                            <div className="library-styling-toggle">
+                                <label className="toggle-label">
+                                    <span className="toggle-text">
+                                        <strong>Preserve Styling</strong>
+                                        <small>{preserveStyling ? 'Keep original colors, fonts & CSS' : 'Strip styles (use with Brand Kit)'}</small>
+                                    </span>
+                                    <div className={`toggle-switch ${preserveStyling ? 'active' : ''}`} onClick={() => setPreserveStyling(!preserveStyling)}>
+                                        <div className="toggle-knob" />
+                                    </div>
+                                </label>
+                            </div>
+                        )}
                         <div className="library-detail-preview">
                             <iframe
                                 srcDoc={selectedItem.content}

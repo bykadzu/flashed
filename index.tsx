@@ -13,7 +13,7 @@ import ReactDOM from 'react-dom/client';
 import { ClerkProvider, SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react';
 import { useAuth } from './lib/useAuth';
 
-import { Artifact, Session, ComponentVariation, LayoutOption, BrandKit, Project, Site, SitePage } from './types';
+import { Artifact, Session, ComponentVariation, LayoutOption, BrandKit, Project, Site, SitePage, HTMLItem } from './types';
 import {
     INITIAL_PLACEHOLDERS,
     FOCUS_DELAY,
@@ -746,6 +746,38 @@ Return ONLY the complete, updated HTML. No explanations or markdown code blocks.
       setIsProjectManagerOpen(false);
   };
 
+  // Load item from library into workspace
+  const handleLoadFromLibrary = (item: HTMLItem, preserveStyling: boolean) => {
+      let html = item.content;
+
+      // If not preserving styling, strip CSS (basic implementation)
+      if (!preserveStyling) {
+          // Remove <style> tags
+          html = html.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+          // Remove inline style attributes
+          html = html.replace(/\s+style="[^"]*"/gi, '');
+      }
+
+      const newArtifact: Artifact = {
+          id: generateId(),
+          styleName: item.title,
+          html,
+          status: 'complete'
+      };
+
+      const newSession: Session = {
+          id: generateId(),
+          prompt: item.prompt || `Loaded from library: ${item.title}`,
+          artifacts: [newArtifact],
+          createdAt: Date.now()
+      };
+
+      setSessions(prev => [...prev, newSession]);
+      setCurrentSessionIndex(sessions.length);
+      setFocusedArtifactIndex(0);
+      showSuccess(`Loaded "${item.title}" from library`);
+  };
+
   // Add Page to existing site
   const handleAddPage = useCallback(async (sessionId: string) => {
       const pageName = prompt('Enter page name (e.g., About, Contact, Services):');
@@ -1405,6 +1437,7 @@ Return ONLY RAW HTML.
         <HTMLLibrary
             isOpen={isLibraryOpen}
             onClose={() => setIsLibraryOpen(false)}
+            onSelectItem={handleLoadFromLibrary}
         />
 
         {/* Analytics Dashboard */}
@@ -1496,16 +1529,20 @@ Return ONLY RAW HTML.
             />
 
             <div className={`stage-container ${focusedArtifactIndex !== null ? 'mode-focus' : 'mode-split'}`}>
-                 <div className={`empty-state ${hasStarted ? 'fade-out' : ''}`}>
+                 <div className={`empty-state ${focusedArtifactIndex !== null ? 'fade-out' : ''} ${hasStarted ? 'has-content' : ''}`}>
                      <div className="empty-content">
                          <h1>Flashed</h1>
                          <p>Instant landing pages for customer demos</p>
-                         <button className="surprise-button" onClick={handleSurpriseMe} disabled={isLoading}>
-                             <SparklesIcon /> Example Pitch
-                         </button>
-                         <button className="template-browse-btn" onClick={() => setIsTemplateLibraryOpen(true)} disabled={isLoading}>
-                             <TemplateIcon /> Browse Templates
-                         </button>
+                         {!hasStarted && (
+                             <>
+                                 <button className="surprise-button" onClick={handleSurpriseMe} disabled={isLoading}>
+                                     <SparklesIcon /> Example Pitch
+                                 </button>
+                                 <button className="template-browse-btn" onClick={() => setIsTemplateLibraryOpen(true)} disabled={isLoading}>
+                                     <TemplateIcon /> Browse Templates
+                                 </button>
+                             </>
+                         )}
                      </div>
                  </div>
 
@@ -1593,9 +1630,9 @@ Return ONLY RAW HTML.
                  </div>
             </div>
 
-            <div className="floating-input-container">
-                {/* Controls bar - only shown when user has started working */}
-                {hasStarted && (
+            <div className={`floating-input-container ${focusedArtifactIndex !== null ? 'hidden' : ''}`}>
+                {/* Controls bar - only shown when no artifact is focused (hide during preview to reduce clutter) */}
+                {hasStarted && focusedArtifactIndex === null && (
                     <div className="input-controls-bar">
                         {/* Brand Kit Selector */}
                         <div className="brand-kit-selector">

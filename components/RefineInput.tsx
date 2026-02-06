@@ -68,23 +68,6 @@ export default function RefineInput({ isVisible, isRefining, onRefine, placehold
                 )}
             </div>
             
-            {/* Quick suggestions */}
-            {isVisible && !isRefining && !value && (
-                <div className="refine-suggestions">
-                    {['More minimal', 'Bolder colors', 'Add animations', 'Change font style'].map(suggestion => (
-                        <button 
-                            key={suggestion}
-                            className="refine-suggestion"
-                            onClick={() => {
-                                setValue(suggestion);
-                                inputRef.current?.focus();
-                            }}
-                        >
-                            {suggestion}
-                        </button>
-                    ))}
-                </div>
-            )}
         </div>
     );
 }
