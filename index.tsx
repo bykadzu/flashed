@@ -301,12 +301,19 @@ function App() {
     const currentSession = sessions[currentSessionIndex];
     if (!currentSession) return;
     const artifact = currentSession.artifacts[focusedArtifactIndex];
-    
+
+    // Use session title (nickname) for filename, sanitized for safe filenames
+    const siteName = currentSession.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+      || 'flash-ui';
+
     const blob = new Blob([artifact.html], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `flash-ui-${artifact.id}.html`;
+    a.download = `${siteName}.html`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
