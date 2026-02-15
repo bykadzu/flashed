@@ -3,6 +3,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
+import { TOAST_DURATION_DEFAULT, TOAST_DURATION_ERROR } from '../constants';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
 
@@ -23,7 +24,7 @@ function ToastItem({ toast, onDismiss }: { toast: ToastMessage; onDismiss: () =>
     const [isExiting, setIsExiting] = useState(false);
 
     useEffect(() => {
-        const duration = toast.duration || 4000;
+        const duration = toast.duration || TOAST_DURATION_DEFAULT;
         const timer = setTimeout(() => {
             setIsExiting(true);
             setTimeout(onDismiss, 300); // Wait for exit animation
@@ -95,7 +96,7 @@ export function useToast() {
     };
 
     const showSuccess = (message: string, duration?: number) => addToast('success', message, duration);
-    const showError = (message: string, duration?: number) => addToast('error', message, duration || 6000);
+    const showError = (message: string, duration?: number) => addToast('error', message, duration || TOAST_DURATION_ERROR);
     const showWarning = (message: string, duration?: number) => addToast('warning', message, duration);
     const showInfo = (message: string, duration?: number) => addToast('info', message, duration);
 
