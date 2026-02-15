@@ -595,6 +595,33 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
 
   const handleSaveToLibrary = () => {
       if (!currentSession || focusedArtifactIndex === null) return;
+
+      // Site mode: save all site pages as a batch
+      if (currentSession.mode === 'site' && currentSession.site) {
+          const pages = currentSession.site.pages.filter(p => p.status === 'complete' && p.html);
+          if (pages.length === 0) return;
+
+          try {
+              const batchId = generateId();
+              pages.forEach((page, index) => {
+                  const item = htmlLibrary.createLibraryItem(
+                      page.html,
+                      currentSession.prompt,
+                      `${currentSession.site!.name} - ${page.name}`,
+                      ['site', `site-${batchId}`]
+                  );
+                  item.batchId = batchId;
+                  item.batchIndex = index;
+                  htmlLibrary.saveItem(item);
+              });
+              showSuccess(`Saved ${pages.length} site pages to library!`);
+          } catch (e: any) {
+              showError(e.message || 'Failed to save site to library');
+          }
+          return;
+      }
+
+      // Single page mode
       const artifact = currentSession.artifacts[focusedArtifactIndex];
       if (!artifact?.html) return;
 
