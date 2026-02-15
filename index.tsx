@@ -27,6 +27,64 @@ import {
 } from './constants';
 import { generateId, parseDataUrl, formatTimestamp, formatTimestampCompact } from './utils';
 
+// ===== ERROR HANDLING & VALIDATION UTILITIES =====
+
+/**
+ * Sanitize user input to prevent prompt injection
+ */
+function sanitizePrompt(input: string): string {
+    // Remove potential instruction overrides
+    return input
+        .replace(/^(ignore|disregard|forget|skip)[\s:]/gi, '')
+        .replace(/```/g, '')
+        .slice(0, 2000); // Limit length
+}
+
+/**
+ * Clean up HTML response from model
+ */
+function cleanHtmlResponse(html: string): string {
+    let cleaned = html.trim();
+    // Remove markdown code blocks
+    if (cleaned.startsWith('```html')) cleaned = cleaned.substring(7).trimStart();
+    if (cleaned.startsWith('```')) cleaned = cleaned.substring(3).trimStart();
+    if (cleaned.endsWith('```')) cleaned = cleaned.substring(0, cleaned.length - 3).trimEnd();
+    return cleaned;
+}
+
+/**
+ * Validate HTML response has basic structure
+ */
+function isValidHtml(html: string): boolean {
+    if (!html || html.length < 100) return false;
+    const lower = html.toLowerCase();
+    return lower.includes('<html') || lower.includes('<!doctype') || lower.includes('<body');
+}
+
+/**
+ * Retry helper with exponential backoff
+ */
+async function withRetry<T>(
+    fn: () => Promise<T>,
+    maxRetries: number = 2,
+    baseDelay: number = 500
+): Promise<T> {
+    let lastError: Error | undefined;
+    for (let i = 0; i <= maxRetries; i++) {
+        try {
+            return await fn();
+        } catch (e: any) {
+            lastError = e;
+            if (i < maxRetries) {
+                await new Promise(r => setTimeout(r, baseDelay * Math.pow(2, i)));
+            }
+        }
+    }
+    throw lastError;
+}
+
+// ===== END UTILITIES =====
+
 import DottedGlowBackground from './components/DottedGlowBackground';
 import ArtifactCard from './components/ArtifactCard';
 import SideDrawer from './components/SideDrawer';
@@ -55,7 +113,8 @@ import {
     SettingsIcon,
     HomeIcon,
     LayersIcon,
-    BookmarkIcon
+    BookmarkIcon,
+    ShieldIcon
 } from './components/Icons';
 import PublishModal from './components/PublishModal';
 import ShareModal from './components/ShareModal';
@@ -63,6 +122,7 @@ import RefineInput from './components/RefineInput';
 import BrandKitEditor from './components/BrandKitEditor';
 import ProjectManager from './components/ProjectManager';
 import TemplateLibrary from './components/TemplateLibrary';
+import PrivacyPolicyGenerator from './components/PrivacyPolicyGenerator';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import Settings from './components/Settings';
 import Sidebar from './components/Sidebar';
@@ -122,6 +182,9 @@ function App() {
   
   // Template Library State
   const [isTemplateLibraryOpen, setIsTemplateLibraryOpen] = useState(false);
+  
+  // Privacy Policy Generator State
+  const [isPrivacyPolicyOpen, setIsPrivacyPolicyOpen] = useState(false);
   
   // Analytics State
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
@@ -503,10 +566,17 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
             });
 
             let html = response.text || '';
-            // Clean up code blocks if present
-            if (html.startsWith('```html')) html = html.substring(7).trimStart();
-            if (html.startsWith('```')) html = html.substring(3).trimStart();
-            if (html.endsWith('```')) html = html.substring(0, html.length - 3).trimEnd();
+            // Clean up code blocks if present using utility function
+            html = cleanHtmlResponse(html);
+            
+            // Validate HTML structure
+            if (!isValidHtml(html)) {
+              console.warn("Variation HTML failed validation");
+              const htmlMatch = html.match(/<html[\s\S]*<\/html>/i);
+              if (htmlMatch) {
+                html = htmlMatch[0];
+              }
+            }
 
             return { name: style.name, html };
         };
@@ -733,10 +803,17 @@ Return ONLY the complete, updated HTML. No explanations or markdown code blocks.
           }
           
           // Clean up code blocks if present
-          let finalHtml = accumulatedHtml.trim();
-          if (finalHtml.startsWith('```html')) finalHtml = finalHtml.substring(7).trimStart();
-          if (finalHtml.startsWith('```')) finalHtml = finalHtml.substring(3).trimStart();
-          if (finalHtml.endsWith('```')) finalHtml = finalHtml.substring(0, finalHtml.length - 3).trimEnd();
+          let finalHtml = cleanHtmlResponse(accumulatedHtml);
+          
+          // Validate HTML structure
+          if (!isValidHtml(finalHtml)) {
+            console.warn("Generated HTML failed validation, attempting cleanup");
+            // Try to extract any HTML from the response
+            const htmlMatch = finalHtml.match(/<html[\s\S]*<\/html>/i);
+            if (htmlMatch) {
+              finalHtml = htmlMatch[0];
+            }
+          }
           
           setSessions(prev => prev.map((sess, i) => 
               i === currentSessionIndex ? {
@@ -1073,7 +1150,8 @@ Return ONLY RAW HTML.
 
   const handleSendMessage = useCallback(async (manualPrompt?: string) => {
     const promptToUse = manualPrompt || inputValue;
-    const trimmedInput = promptToUse.trim();
+    const sanitizedInput = sanitizePrompt(promptToUse);
+    const trimmedInput = sanitizedInput.trim();
     const currentUrl = urlValue.trim();
     
     if (!trimmedInput || isLoading) return;
@@ -1218,11 +1296,17 @@ Return ONLY RAW HTML.
                     }
                 }
                 
-                // Clean up
-                let finalHtml = accumulatedHtml.trim();
-                if (finalHtml.startsWith('```html')) finalHtml = finalHtml.substring(7).trimStart();
-                if (finalHtml.startsWith('```')) finalHtml = finalHtml.substring(3).trimStart();
-                if (finalHtml.endsWith('```')) finalHtml = finalHtml.substring(0, finalHtml.length - 3).trimEnd();
+                // Clean up using utility function
+                let finalHtml = cleanHtmlResponse(accumulatedHtml);
+                
+                // Validate HTML structure
+                if (!isValidHtml(finalHtml)) {
+                  console.warn("Site page HTML failed validation");
+                  const htmlMatch = finalHtml.match(/<html[\s\S]*<\/html>/i);
+                  if (htmlMatch) {
+                    finalHtml = htmlMatch[0];
+                  }
+                }
                 
                 setSessions(prev => prev.map(s => 
                     s.id === sessionId && s.site ? {
@@ -1432,11 +1516,15 @@ Return ONLY RAW HTML.
                     }
                 }
                 
-                let finalHtml = accumulatedHtml.trim();
-                // Basic cleanup if the model wraps in code blocks
-                if (finalHtml.startsWith('```html')) finalHtml = finalHtml.substring(7).trimStart();
-                if (finalHtml.startsWith('```')) finalHtml = finalHtml.substring(3).trimStart();
-                if (finalHtml.endsWith('```')) finalHtml = finalHtml.substring(0, finalHtml.length - 3).trimEnd();
+                let finalHtml = cleanHtmlResponse(accumulatedHtml);
+                // Validate HTML structure
+                if (!isValidHtml(finalHtml)) {
+                  console.warn("Artifact HTML failed validation");
+                  const htmlMatch = finalHtml.match(/<html[\s\S]*<\/html>/i);
+                  if (htmlMatch) {
+                    finalHtml = htmlMatch[0];
+                  }
+                }
 
                 setSessions(prev => prev.map(sess => 
                     sess.id === sessionId ? {
@@ -1484,6 +1572,28 @@ Return ONLY RAW HTML.
       setInputValue(prompt);
       // Focus the input so user can modify if needed
       setTimeout(() => inputRef.current?.focus(), FOCUS_DELAY);
+  };
+
+  // Handle privacy policy generation
+  const handlePrivacyPolicyGenerated = (html: string, businessName: string) => {
+      const newArtifact: Artifact = {
+          id: generateId(),
+          styleName: `Privacy Policy - ${businessName}`,
+          html,
+          status: 'complete'
+      };
+
+      const newSession: Session = {
+          id: generateId(),
+          prompt: `Privacy Policy for ${businessName}`,
+          artifacts: [newArtifact],
+          createdAt: Date.now()
+      };
+
+      setSessions(prev => [...prev, newSession]);
+      setCurrentSessionIndex(sessions.length);
+      setFocusedArtifactIndex(0);
+      showSuccess(`Generated privacy policy for ${businessName}`);
   };
 
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -1603,6 +1713,13 @@ Return ONLY RAW HTML.
             onSelectTemplate={handleSelectTemplate}
         />
 
+        {/* Privacy Policy Generator */}
+        <PrivacyPolicyGenerator
+            isOpen={isPrivacyPolicyOpen}
+            onClose={() => setIsPrivacyPolicyOpen(false)}
+            onGenerate={handlePrivacyPolicyGenerated}
+        />
+
         {/* HTML Library */}
         <HTMLLibrary
             isOpen={isLibraryOpen}
@@ -1711,6 +1828,9 @@ Return ONLY RAW HTML.
                                  </button>
                                  <button className="template-browse-btn" onClick={() => setIsTemplateLibraryOpen(true)} disabled={isLoading}>
                                      <TemplateIcon /> Browse Templates
+                                 </button>
+                                 <button className="template-browse-btn" onClick={() => setIsPrivacyPolicyOpen(true)} disabled={isLoading}>
+                                     <ShieldIcon /> Privacy Policy
                                  </button>
                              </>
                          )}
