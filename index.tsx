@@ -27,6 +27,64 @@ import {
 } from './constants';
 import { generateId, parseDataUrl } from './utils';
 
+// ===== ERROR HANDLING & VALIDATION UTILITIES =====
+
+/**
+ * Sanitize user input to prevent prompt injection
+ */
+function sanitizePrompt(input: string): string {
+    // Remove potential instruction overrides
+    return input
+        .replace(/^(ignore|disregard|forget|skip)[\s:]/gi, '')
+        .replace(/```/g, '')
+        .slice(0, 2000); // Limit length
+}
+
+/**
+ * Clean up HTML response from model
+ */
+function cleanHtmlResponse(html: string): string {
+    let cleaned = html.trim();
+    // Remove markdown code blocks
+    if (cleaned.startsWith('```html')) cleaned = cleaned.substring(7).trimStart();
+    if (cleaned.startsWith('```')) cleaned = cleaned.substring(3).trimStart();
+    if (cleaned.endsWith('```')) cleaned = cleaned.substring(0, cleaned.length - 3).trimEnd();
+    return cleaned;
+}
+
+/**
+ * Validate HTML response has basic structure
+ */
+function isValidHtml(html: string): boolean {
+    if (!html || html.length < 100) return false;
+    const lower = html.toLowerCase();
+    return lower.includes('<html') || lower.includes('<!doctype') || lower.includes('<body');
+}
+
+/**
+ * Retry helper with exponential backoff
+ */
+async function withRetry<T>(
+    fn: () => Promise<T>,
+    maxRetries: number = 2,
+    baseDelay: number = 500
+): Promise<T> {
+    let lastError: Error | undefined;
+    for (let i = 0; i <= maxRetries; i++) {
+        try {
+            return await fn();
+        } catch (e: any) {
+            lastError = e;
+            if (i < maxRetries) {
+                await new Promise(r => setTimeout(r, baseDelay * Math.pow(2, i)));
+            }
+        }
+    }
+    throw lastError;
+}
+
+// ===== END UTILITIES =====
+
 import DottedGlowBackground from './components/DottedGlowBackground';
 import ArtifactCard from './components/ArtifactCard';
 import SideDrawer from './components/SideDrawer';
@@ -1035,7 +1093,8 @@ Return ONLY RAW HTML.
 
   const handleSendMessage = useCallback(async (manualPrompt?: string) => {
     const promptToUse = manualPrompt || inputValue;
-    const trimmedInput = promptToUse.trim();
+    const sanitizedInput = sanitizePrompt(promptToUse);
+    const trimmedInput = sanitizedInput.trim();
     const currentUrl = urlValue.trim();
     
     if (!trimmedInput || isLoading) return;
