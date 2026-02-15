@@ -113,7 +113,8 @@ import {
     SettingsIcon,
     HomeIcon,
     LayersIcon,
-    BookmarkIcon
+    BookmarkIcon,
+    ShieldIcon
 } from './components/Icons';
 import PublishModal from './components/PublishModal';
 import ShareModal from './components/ShareModal';
@@ -121,6 +122,7 @@ import RefineInput from './components/RefineInput';
 import BrandKitEditor from './components/BrandKitEditor';
 import ProjectManager from './components/ProjectManager';
 import TemplateLibrary from './components/TemplateLibrary';
+import PrivacyPolicyGenerator from './components/PrivacyPolicyGenerator';
 import AnalyticsDashboard from './components/AnalyticsDashboard';
 import Settings from './components/Settings';
 import Sidebar from './components/Sidebar';
@@ -180,6 +182,9 @@ function App() {
   
   // Template Library State
   const [isTemplateLibraryOpen, setIsTemplateLibraryOpen] = useState(false);
+  
+  // Privacy Policy Generator State
+  const [isPrivacyPolicyOpen, setIsPrivacyPolicyOpen] = useState(false);
   
   // Analytics State
   const [isAnalyticsOpen, setIsAnalyticsOpen] = useState(false);
@@ -1531,6 +1536,28 @@ Return ONLY RAW HTML.
       setTimeout(() => inputRef.current?.focus(), FOCUS_DELAY);
   };
 
+  // Handle privacy policy generation
+  const handlePrivacyPolicyGenerated = (html: string, businessName: string) => {
+      const newArtifact: Artifact = {
+          id: generateId(),
+          styleName: `Privacy Policy - ${businessName}`,
+          html,
+          status: 'complete'
+      };
+
+      const newSession: Session = {
+          id: generateId(),
+          prompt: `Privacy Policy for ${businessName}`,
+          artifacts: [newArtifact],
+          createdAt: Date.now()
+      };
+
+      setSessions(prev => [...prev, newSession]);
+      setCurrentSessionIndex(sessions.length);
+      setFocusedArtifactIndex(0);
+      showSuccess(`Generated privacy policy for ${businessName}`);
+  };
+
   const handleKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter' && !isLoading) {
       event.preventDefault();
@@ -1648,6 +1675,13 @@ Return ONLY RAW HTML.
             onSelectTemplate={handleSelectTemplate}
         />
 
+        {/* Privacy Policy Generator */}
+        <PrivacyPolicyGenerator
+            isOpen={isPrivacyPolicyOpen}
+            onClose={() => setIsPrivacyPolicyOpen(false)}
+            onGenerate={handlePrivacyPolicyGenerated}
+        />
+
         {/* HTML Library */}
         <HTMLLibrary
             isOpen={isLibraryOpen}
@@ -1755,6 +1789,9 @@ Return ONLY RAW HTML.
                                  </button>
                                  <button className="template-browse-btn" onClick={() => setIsTemplateLibraryOpen(true)} disabled={isLoading}>
                                      <TemplateIcon /> Browse Templates
+                                 </button>
+                                 <button className="template-browse-btn" onClick={() => setIsPrivacyPolicyOpen(true)} disabled={isLoading}>
+                                     <ShieldIcon /> Privacy Policy
                                  </button>
                              </>
                          )}

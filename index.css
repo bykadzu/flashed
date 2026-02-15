@@ -3753,3 +3753,74 @@ html, body {
     font-size: 0.75rem;
     color: rgba(255, 255, 255, 0.5);
 }
+
+/* === Privacy Policy Generator === */
+.privacy-policy-modal {
+    max-width: 600px !important;
+}
+
+.privacy-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.privacy-form .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.privacy-form .form-group label {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 500;
+}
+
+.privacy-form .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.privacy-form input[type="text"],
+.privacy-form input[type="url"],
+.privacy-form input[type="email"],
+.privacy-form input[type="tel"],
+.privacy-form select {
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.privacy-form input:focus,
+.privacy-form select:focus {
+    outline: none;
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.privacy-form .checkbox-group {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+}
+
+.privacy-form .checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+}
+
+.privacy-form .checkbox-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #6366f1;
+}
