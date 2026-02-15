@@ -7,6 +7,39 @@
 export const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
 
 /**
+ * Format a timestamp (number or Date) to a human-readable string
+ * @param timestamp - Unix timestamp in milliseconds or Date object
+ * @returns Formatted string like "Jan 15, 2026 at 2:30 PM"
+ */
+export function formatTimestamp(timestamp: number | Date): string {
+    const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
+    return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+}
+
+/**
+ * Format a timestamp for display in lists (compact form)
+ * @param timestamp - Unix timestamp in milliseconds or Date object
+ * @returns Formatted string like "Jan 15, 2:30 PM"
+ */
+export function formatTimestampCompact(timestamp: number | Date): string {
+    const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
+    return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+}
+
+/**
  * Extracts MIME type from a base64 data URL string
  * @param dataUrl - Data URL string (e.g., "data:image/png;base64,...")
  * @returns MIME type string (e.g., "image/png") or fallback to "image/jpeg"
@@ -42,21 +75,42 @@ export async function getCroppedImg(
   rotation = 0
 ): Promise<string> {
   const image = await createImage(imageSrc);
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-
-  if (!ctx) {
-    return '';
+  
+  // If no rotation, use simpler path
+  if (rotation === 0) {
+    const canvas = document.createElement('canvas');
+    canvas.width = pixelCrop.width;
+    canvas.height = pixelCrop.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return '';
+    
+    ctx.drawImage(
+      image,
+      pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height,
+      0, 0, pixelCrop.width, pixelCrop.height
+    );
+    return canvas.toDataURL('image/jpeg');
   }
 
-  // set canvas size to match the bounding box
-  canvas.width = image.width;
-  canvas.height = image.height;
+  // Handle rotation
+  const radians = (rotation * Math.PI) / 180;
+  const sin = Math.abs(Math.sin(radians));
+  const cos = Math.abs(Math.cos(radians));
+  const rotatedWidth = image.width * cos + image.height * sin;
+  const rotatedHeight = image.width * sin + image.height * cos;
 
-  // draw image
-  ctx.drawImage(image, 0, 0);
+  const canvas = document.createElement('canvas');
+  canvas.width = rotatedWidth;
+  canvas.height = rotatedHeight;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return '';
 
-  // extracted cropped image
+  // Transform: translate to center, rotate, draw image centered
+  ctx.translate(rotatedWidth / 2, rotatedHeight / 2);
+  ctx.rotate(radians);
+  ctx.drawImage(image, -image.width / 2, -image.height / 2);
+
+  // Extract cropped area from rotated canvas
   const data = ctx.getImageData(
     pixelCrop.x,
     pixelCrop.y,
@@ -64,13 +118,13 @@ export async function getCroppedImg(
     pixelCrop.height
   );
 
-  // set canvas width to final desired crop size - this will clear existing context
-  canvas.width = pixelCrop.width;
-  canvas.height = pixelCrop.height;
+  // Create final canvas with crop dimensions
+  const finalCanvas = document.createElement('canvas');
+  finalCanvas.width = pixelCrop.width;
+  finalCanvas.height = pixelCrop.height;
+  const finalCtx = finalCanvas.getContext('2d');
+  if (!finalCtx) return '';
 
-  // paste generated rotate image at the top left corner
-  ctx.putImageData(data, 0, 0);
-
-  // Return as Base64 string
-  return canvas.toDataURL('image/jpeg');
+  finalCtx.putImageData(data, 0, 0);
+  return finalCanvas.toDataURL('image/jpeg');
 }

@@ -1,6 +1,78 @@
 // OpenRouter API helper
 // Docs: https://openrouter.ai/docs
 
+// Retry configuration
+const DEFAULT_MAX_RETRIES = 3;
+const DEFAULT_INITIAL_DELAY_MS = 1000;
+const DEFAULT_BACKOFF_MULTIPLIER = 2;
+
+/**
+ * Retry helper with exponential backoff
+ * Useful for transient failures (rate limits, network issues)
+ */
+export interface RetryOptions {
+  maxRetries?: number;
+  initialDelayMs?: number;
+  backoffMultiplier?: number;
+  retryableStatuses?: number[];
+  onRetry?: (attempt: number, error: Error, delayMs: number) => void;
+}
+
+/**
+ * Executes a function with exponential backoff retry
+ * @param fn The async function to execute
+ * @param options Retry configuration
+ * @returns The result of the function
+ */
+export async function withRetry<T>(
+  fn: () => Promise<T>,
+  options: RetryOptions = {}
+): Promise<T> {
+  const {
+    maxRetries = DEFAULT_MAX_RETRIES,
+    initialDelayMs = DEFAULT_INITIAL_DELAY_MS,
+    backoffMultiplier = DEFAULT_BACKOFF_MULTIPLIER,
+    retryableStatuses = [429, 500, 502, 503, 504], // Rate limit + server errors
+    onRetry
+  } = options;
+
+  let lastError: Error;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await fn();
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+
+      // Don't retry on last attempt
+      if (attempt === maxRetries) {
+        break;
+      }
+
+      // Check if error is retryable
+      const isRetryable = lastError.message.includes('429') ||
+        retryableStatuses.some(status => lastError.message.includes(String(status)));
+
+      if (!isRetryable && lastError.message.includes('OpenRouter error:')) {
+        // Non-retryable API error, don't retry
+        throw lastError;
+      }
+
+      const delayMs = initialDelayMs * Math.pow(backoffMultiplier, attempt);
+
+      if (onRetry) {
+        onRetry(attempt + 1, lastError, delayMs);
+      }
+
+      console.warn(`Retry attempt ${attempt + 1}/${maxRetries} after ${delayMs}ms:`, lastError.message);
+
+      await new Promise(resolve => setTimeout(resolve, delayMs));
+    }
+  }
+
+  throw lastError!;
+}
+
 export const AVAILABLE_MODELS = [
   { id: 'google/gemini-3-flash-preview', name: 'Gemini 3 Flash', provider: 'Google' },
   { id: 'google/gemini-3-pro-preview', name: 'Gemini 3 Pro', provider: 'Google' },
