@@ -49,14 +49,26 @@ export async function getCroppedImg(
     return '';
   }
 
-  // set canvas size to match the bounding box
-  canvas.width = image.width;
-  canvas.height = image.height;
+  // Calculate new dimensions after rotation
+  const radians = (rotation * Math.PI) / 180;
+  const sin = Math.abs(Math.sin(radians));
+  const cos = Math.abs(Math.cos(radians));
+  const newWidth = image.width * cos + image.height * sin;
+  const newHeight = image.width * sin + image.height * cos;
 
-  // draw image
+  // Set canvas size to match rotated image
+  canvas.width = newWidth;
+  canvas.height = newHeight;
+
+  // Move origin to center for rotation
+  ctx.translate(newWidth / 2, newHeight / 2);
+  ctx.rotate(radians);
+  ctx.translate(-image.width / 2, -image.height / 2);
+
+  // Draw rotated image
   ctx.drawImage(image, 0, 0);
 
-  // extracted cropped image
+  // Extract cropped image
   const data = ctx.getImageData(
     pixelCrop.x,
     pixelCrop.y,
@@ -64,13 +76,18 @@ export async function getCroppedImg(
     pixelCrop.height
   );
 
-  // set canvas width to final desired crop size - this will clear existing context
-  canvas.width = pixelCrop.width;
-  canvas.height = pixelCrop.height;
+  // Create final canvas with crop dimensions
+  const finalCanvas = document.createElement('canvas');
+  finalCanvas.width = pixelCrop.width;
+  finalCanvas.height = pixelCrop.height;
+  const finalCtx = finalCanvas.getContext('2d');
 
-  // paste generated rotate image at the top left corner
-  ctx.putImageData(data, 0, 0);
+  if (!finalCtx) {
+    return '';
+  }
+
+  finalCtx.putImageData(data, 0, 0);
 
   // Return as Base64 string
-  return canvas.toDataURL('image/jpeg');
+  return finalCanvas.toDataURL('image/jpeg');
 }
