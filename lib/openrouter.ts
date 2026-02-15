@@ -4,13 +4,13 @@
 export const AVAILABLE_MODELS = [
   { id: 'google/gemini-3-flash-preview', name: 'Gemini 3 Flash', provider: 'Google' },
   { id: 'google/gemini-3-pro-preview', name: 'Gemini 3 Pro', provider: 'Google' },
-  { id: 'x-ai/grok-4.1-fast', name: 'Grok 4.1 Fast', provider: 'xAI' },
   { id: 'anthropic/claude-haiku-4.5', name: 'Claude Haiku 4.5', provider: 'Anthropic' },
   { id: 'anthropic/claude-sonnet-4.5', name: 'Claude Sonnet 4.5', provider: 'Anthropic' },
   { id: 'qwen/qwen3-coder-next', name: 'Qwen3 Coder', provider: 'Qwen' },
-  { id: 'deepseek/deepseek-chat', name: 'DeepSeek V3', provider: 'DeepSeek' },
   { id: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'Google' },
-  { id: 'anthropic/claude-opus-4.5', name: 'Claude Opus 4.5', provider: 'Anthropic' },
+  { id: 'anthropic/claude-opus-4.6', name: 'Claude Opus 4.6', provider: 'Anthropic' },
+  { id: 'minimax/minimax-m2.5', name: 'MiniMax M2.5', provider: 'MiniMax' },
+  { id: 'z-ai/glm-5', name: 'GLM 5', provider: 'Z.ai' },
 ] as const;
 
 export type ModelId = typeof AVAILABLE_MODELS[number]['id'];
