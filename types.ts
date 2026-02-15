@@ -127,6 +127,8 @@ export interface HTMLItem {
     prompt?: string; // Original prompt used to generate
     batchId?: string; // Groups batch-saved library items
     batchIndex?: number; // Position within batch
+    sourceType?: 'html' | 'jsx'; // Tracks whether content was compiled from JSX
+    originalSource?: string; // Stores raw JSX/TSX source for re-editing
 }
 
 export type LibrarySortOption = 'newest' | 'oldest' | 'name' | 'size';

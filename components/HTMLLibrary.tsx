@@ -5,16 +5,19 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { HTMLItem, LibrarySortOption } from '../types';
 import * as library from '../lib/htmlLibrary';
+import { compileJSX } from '../lib/jsxCompiler';
 import { XIcon, DownloadIcon, SearchIcon, TrashIcon, LayersIcon, UploadIcon } from './Icons';
 import ConfirmModal from './ConfirmModal';
+import JSZip from 'jszip';
 
 interface HTMLLibraryProps {
     isOpen: boolean;
     onClose: () => void;
     onSelectItem?: (item: HTMLItem, preserveStyling: boolean) => void;
+    onOpenSiteInEditor?: (items: HTMLItem[]) => void;
 }
 
-export default function HTMLLibrary({ isOpen, onClose, onSelectItem }: HTMLLibraryProps) {
+export default function HTMLLibrary({ isOpen, onClose, onSelectItem, onOpenSiteInEditor }: HTMLLibraryProps) {
     const [items, setItems] = useState<HTMLItem[]>([]);
     const [searchQuery, setSearchQuery] = useState('');
     const [sortOption, setSortOption] = useState<LibrarySortOption>('newest');
@@ -24,7 +27,10 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem }: HTMLLibra
     const [preserveStyling, setPreserveStyling] = useState(true);
     const [groupByBatch, setGroupByBatch] = useState(false);
     const [expandedBatches, setExpandedBatches] = useState<Set<string>>(new Set());
+    const [isUploadDropdownOpen, setIsUploadDropdownOpen] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const zipInputRef = useRef<HTMLInputElement>(null);
+    const folderInputRef = useRef<HTMLInputElement>(null);
 
     // Load library on open
     useEffect(() => {
@@ -39,6 +45,8 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem }: HTMLLibra
             if (e.key === 'Escape' && isOpen) {
                 if (isSortDropdownOpen) {
                     setIsSortDropdownOpen(false);
+                } else if (isUploadDropdownOpen) {
+                    setIsUploadDropdownOpen(false);
                 } else {
                     onClose();
                 }
@@ -47,20 +55,23 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem }: HTMLLibra
 
         document.addEventListener('keydown', handleKeyDown);
         return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, onClose, isSortDropdownOpen]);
+    }, [isOpen, onClose, isSortDropdownOpen, isUploadDropdownOpen]);
 
-    // Close sort dropdown when clicking outside
+    // Close dropdowns when clicking outside
     useEffect(() => {
         const handleClickOutside = (e: MouseEvent) => {
             const target = e.target as HTMLElement;
             if (isSortDropdownOpen && !target.closest('.library-sort-dropdown')) {
                 setIsSortDropdownOpen(false);
             }
+            if (isUploadDropdownOpen && !target.closest('.upload-split-btn')) {
+                setIsUploadDropdownOpen(false);
+            }
         };
 
         document.addEventListener('click', handleClickOutside);
         return () => document.removeEventListener('click', handleClickOutside);
-    }, [isSortDropdownOpen]);
+    }, [isSortDropdownOpen, isUploadDropdownOpen]);
 
     const filteredItems = useMemo(() => {
         let result = items.filter(item => {
@@ -118,6 +129,11 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem }: HTMLLibra
 
     const hasBatchItems = items.some(item => item.batchId);
 
+    const generateBatchId = () => Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
+
+    const isJSXFile = (filename: string) => /\.(jsx|tsx|js|ts)$/i.test(filename);
+    const isHTMLFile = (filename: string) => /\.(html|htm)$/i.test(filename);
+
     const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (!files || files.length === 0) return;
@@ -125,24 +141,38 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem }: HTMLLibra
         let uploadCount = 0;
 
         for (const file of Array.from(files)) {
-            if (!file.name.endsWith('.html') && !file.name.endsWith('.htm')) continue;
-
             try {
-                const content = await file.text();
-                // Extract title from HTML or use filename
-                const titleMatch = content.match(/<title>([^<]*)<\/title>/i);
-                const title = titleMatch ? titleMatch[1].trim() : file.name.replace(/\.html?$/i, '');
+                if (isHTMLFile(file.name)) {
+                    const content = await file.text();
+                    const titleMatch = content.match(/<title>([^<]*)<\/title>/i);
+                    const title = titleMatch ? titleMatch[1].trim() : file.name.replace(/\.html?$/i, '');
 
-                const item = library.createLibraryItem(
-                    content,
-                    `Uploaded from ${file.name}`,
-                    title,
-                    ['uploaded']
-                );
-                library.saveItem(item);
-                uploadCount++;
+                    const item = library.createLibraryItem(
+                        content,
+                        `Uploaded from ${file.name}`,
+                        title,
+                        ['uploaded']
+                    );
+                    library.saveItem(item);
+                    uploadCount++;
+                } else if (isJSXFile(file.name)) {
+                    const source = await file.text();
+                    const compiled = await compileJSX(source, file.name);
+                    const title = file.name.replace(/\.[jt]sx?$/i, '');
+
+                    const item = library.createLibraryItem(
+                        compiled,
+                        `Compiled from ${file.name}`,
+                        title,
+                        ['uploaded', 'jsx']
+                    );
+                    item.sourceType = 'jsx';
+                    item.originalSource = source;
+                    library.saveItem(item);
+                    uploadCount++;
+                }
             } catch (err) {
-                console.error(`Failed to read file: ${file.name}`, err);
+                console.error(`Failed to process file: ${file.name}`, err);
             }
         }
 
@@ -150,9 +180,150 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem }: HTMLLibra
             setItems(library.getLibrary());
         }
 
-        // Reset file input
         if (fileInputRef.current) {
             fileInputRef.current.value = '';
+        }
+    };
+
+    const handleZipUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        const zipFile = files[0];
+        let uploadCount = 0;
+
+        try {
+            const arrayBuffer = await zipFile.arrayBuffer();
+            const zip = await JSZip.loadAsync(arrayBuffer);
+
+            const htmlFiles: { name: string; content: string }[] = [];
+            const entries = Object.entries(zip.files);
+
+            for (const [path, file] of entries) {
+                if (file.dir) continue;
+                if (!isHTMLFile(path)) continue;
+                const content = await file.async('string');
+                htmlFiles.push({ name: path, content });
+            }
+
+            if (htmlFiles.length === 0) return;
+
+            if (htmlFiles.length === 1) {
+                // Single HTML file - no batch
+                const { name, content } = htmlFiles[0];
+                const titleMatch = content.match(/<title>([^<]*)<\/title>/i);
+                const filename = name.split('/').pop() || name;
+                const title = titleMatch ? titleMatch[1].trim() : filename.replace(/\.html?$/i, '');
+
+                const item = library.createLibraryItem(content, `Uploaded from ${zipFile.name}`, title, ['uploaded']);
+                library.saveItem(item);
+                uploadCount = 1;
+            } else {
+                // Multiple HTML files - create a batch
+                const batchId = generateBatchId();
+                htmlFiles.forEach((file, index) => {
+                    const titleMatch = file.content.match(/<title>([^<]*)<\/title>/i);
+                    const filename = file.name.split('/').pop() || file.name;
+                    const title = titleMatch ? titleMatch[1].trim() : filename.replace(/\.html?$/i, '');
+
+                    const item = library.createLibraryItem(
+                        file.content,
+                        `Uploaded from ${zipFile.name}`,
+                        title,
+                        ['uploaded', 'site', `site-${batchId}`]
+                    );
+                    item.batchId = batchId;
+                    item.batchIndex = index;
+                    library.saveItem(item);
+                    uploadCount++;
+                });
+            }
+        } catch (err) {
+            console.error('Failed to process ZIP file:', err);
+        }
+
+        if (uploadCount > 0) {
+            setItems(library.getLibrary());
+        }
+
+        if (zipInputRef.current) {
+            zipInputRef.current.value = '';
+        }
+    };
+
+    const handleFolderUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        const htmlFiles: { name: string; relativePath: string; file: File }[] = [];
+
+        for (const file of Array.from(files)) {
+            if (!isHTMLFile(file.name)) continue;
+            htmlFiles.push({
+                name: file.name,
+                relativePath: (file as any).webkitRelativePath || file.name,
+                file
+            });
+        }
+
+        if (htmlFiles.length === 0) return;
+
+        let uploadCount = 0;
+
+        if (htmlFiles.length === 1) {
+            // Single file - no batch
+            const { name, file } = htmlFiles[0];
+            const content = await file.text();
+            const titleMatch = content.match(/<title>([^<]*)<\/title>/i);
+            const title = titleMatch ? titleMatch[1].trim() : name.replace(/\.html?$/i, '');
+
+            const item = library.createLibraryItem(content, `Uploaded from folder`, title, ['uploaded']);
+            library.saveItem(item);
+            uploadCount = 1;
+        } else {
+            // Multiple files - create batch
+            const batchId = generateBatchId();
+            for (let index = 0; index < htmlFiles.length; index++) {
+                const { name, relativePath, file } = htmlFiles[index];
+                try {
+                    const content = await file.text();
+                    const titleMatch = content.match(/<title>([^<]*)<\/title>/i);
+                    const pageName = relativePath.split('/').pop()?.replace(/\.html?$/i, '') || name.replace(/\.html?$/i, '');
+                    const title = titleMatch ? titleMatch[1].trim() : pageName;
+
+                    const item = library.createLibraryItem(
+                        content,
+                        `Uploaded from folder`,
+                        title,
+                        ['uploaded', 'site', `site-${batchId}`]
+                    );
+                    item.batchId = batchId;
+                    item.batchIndex = index;
+                    library.saveItem(item);
+                    uploadCount++;
+                } catch (err) {
+                    console.error(`Failed to read file: ${name}`, err);
+                }
+            }
+        }
+
+        if (uploadCount > 0) {
+            setItems(library.getLibrary());
+        }
+
+        if (folderInputRef.current) {
+            folderInputRef.current.value = '';
+        }
+    };
+
+    const handleOpenBatchInEditor = (batchId: string) => {
+        if (!onOpenSiteInEditor) return;
+        const batchItems = items
+            .filter(item => item.batchId === batchId)
+            .sort((a, b) => (a.batchIndex ?? 0) - (b.batchIndex ?? 0));
+        if (batchItems.length > 0) {
+            onOpenSiteInEditor(batchItems);
+            onClose();
         }
     };
 
@@ -194,6 +365,35 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem }: HTMLLibra
         if (bytes > 1024) return `${(bytes / 1024).toFixed(1)} KB`;
         return `${bytes} B`;
     };
+
+    const renderJSXBadge = (item: HTMLItem) => {
+        if (item.sourceType === 'jsx') {
+            return <span className="jsx-badge">JSX</span>;
+        }
+        return null;
+    };
+
+    const renderSiteBadge = (item: HTMLItem) => {
+        if (item.tags.includes('site')) {
+            return <span className="site-badge">Site</span>;
+        }
+        return null;
+    };
+
+    const renderCardInfo = (item: HTMLItem) => (
+        <div className="library-card-info">
+            <h4>
+                {item.title}
+                {renderJSXBadge(item)}
+                {renderSiteBadge(item)}
+            </h4>
+            {item.description && <p className="library-card-desc">{item.description}</p>}
+            <div className="library-card-meta">
+                <span>{formatDate(item.createdAt)}</span>
+                <span>{formatSize(item.size)}</span>
+            </div>
+        </div>
+    );
 
     if (!isOpen) return null;
 
@@ -254,22 +454,74 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem }: HTMLLibra
                         )}
                     </div>
 
-                    {/* Upload Button */}
+                    {/* Upload Split Button */}
                     <input
                         type="file"
                         ref={fileInputRef}
                         onChange={handleUpload}
-                        accept=".html,.htm"
+                        accept=".html,.htm,.jsx,.tsx,.js,.ts"
                         multiple
                         style={{ display: 'none' }}
                     />
-                    <button
-                        className="library-upload-btn"
-                        onClick={() => fileInputRef.current?.click()}
-                        aria-label="Upload HTML files"
-                    >
-                        <UploadIcon /> Upload
-                    </button>
+                    <input
+                        type="file"
+                        ref={zipInputRef}
+                        onChange={handleZipUpload}
+                        accept=".zip"
+                        style={{ display: 'none' }}
+                    />
+                    <input
+                        type="file"
+                        ref={folderInputRef}
+                        onChange={handleFolderUpload}
+                        {...({ webkitdirectory: '', directory: '' } as any)}
+                        style={{ display: 'none' }}
+                    />
+                    <div className="upload-split-btn">
+                        <button
+                            className="library-upload-btn"
+                            onClick={() => setIsUploadDropdownOpen(!isUploadDropdownOpen)}
+                            aria-label="Upload files"
+                            aria-expanded={isUploadDropdownOpen}
+                            aria-haspopup="true"
+                        >
+                            <UploadIcon /> Upload
+                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ marginLeft: 2 }}>
+                                <path d="M6 9l6 6 6-6"/>
+                            </svg>
+                        </button>
+                        {isUploadDropdownOpen && (
+                            <div className="upload-dropdown">
+                                <button
+                                    className="upload-dropdown-item"
+                                    onClick={() => {
+                                        fileInputRef.current?.click();
+                                        setIsUploadDropdownOpen(false);
+                                    }}
+                                >
+                                    Upload HTML / JSX
+                                </button>
+                                <button
+                                    className="upload-dropdown-item"
+                                    onClick={() => {
+                                        zipInputRef.current?.click();
+                                        setIsUploadDropdownOpen(false);
+                                    }}
+                                >
+                                    Upload ZIP
+                                </button>
+                                <button
+                                    className="upload-dropdown-item"
+                                    onClick={() => {
+                                        folderInputRef.current?.click();
+                                        setIsUploadDropdownOpen(false);
+                                    }}
+                                >
+                                    Upload Folder
+                                </button>
+                            </div>
+                        )}
+                    </div>
 
                     {hasBatchItems && (
                         <button
@@ -303,11 +555,24 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem }: HTMLLibra
                                                 <div className="batch-info">
                                                     <LayersIcon />
                                                     <span>{firstItem.prompt?.slice(0, 40) || 'Batch'}</span>
-                                                    <span className="batch-count">{batchItems.length} variants</span>
+                                                    <span className="batch-count">{batchItems.length} pages</span>
                                                 </div>
-                                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
-                                                    {isExpanded ? '▼' : '▶'} {formatDate(firstItem.createdAt)}
-                                                </span>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    {onOpenSiteInEditor && (
+                                                        <button
+                                                            className="batch-editor-btn"
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                handleOpenBatchInEditor(batchId);
+                                                            }}
+                                                        >
+                                                            Open in Editor
+                                                        </button>
+                                                    )}
+                                                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+                                                        {isExpanded ? '\u25BC' : '\u25B6'} {formatDate(firstItem.createdAt)}
+                                                    </span>
+                                                </div>
                                             </div>
                                             {!isExpanded && (
                                                 <div className="batch-stacked-preview" onClick={() => toggleBatchExpanded(batchId)}>
@@ -330,13 +595,7 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem }: HTMLLibra
                                                                 </div>
                                                                 <div className="library-card-overlay"><span>View</span></div>
                                                             </div>
-                                                            <div className="library-card-info">
-                                                                <h4>{item.title}</h4>
-                                                                <div className="library-card-meta">
-                                                                    <span>{formatDate(item.createdAt)}</span>
-                                                                    <span>{formatSize(item.size)}</span>
-                                                                </div>
-                                                            </div>
+                                                            {renderCardInfo(item)}
                                                             <div className="library-card-actions">
                                                                 <button onClick={(e) => { e.stopPropagation(); handleDownload(item); }} title="Download" aria-label="Download page"><DownloadIcon /></button>
                                                                 <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(item); }} title="Delete" aria-label="Delete page" className="delete-btn"><TrashIcon /></button>
@@ -362,14 +621,7 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem }: HTMLLibra
                                         </div>
                                         <div className="library-card-overlay"><span>View</span></div>
                                     </div>
-                                    <div className="library-card-info">
-                                        <h4>{item.title}</h4>
-                                        {item.description && <p className="library-card-desc">{item.description}</p>}
-                                        <div className="library-card-meta">
-                                            <span>{formatDate(item.createdAt)}</span>
-                                            <span>{formatSize(item.size)}</span>
-                                        </div>
-                                    </div>
+                                    {renderCardInfo(item)}
                                     <div className="library-card-actions">
                                         <button onClick={(e) => { e.stopPropagation(); handleDownload(item); }} title="Download" aria-label="Download page"><DownloadIcon /></button>
                                         <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(item); }} title="Delete" aria-label="Delete page" className="delete-btn"><TrashIcon /></button>
@@ -400,16 +652,7 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem }: HTMLLibra
                                     </div>
 
                                     {/* Info */}
-                                    <div className="library-card-info">
-                                        <h4>{item.title}</h4>
-                                        {item.description && (
-                                            <p className="library-card-desc">{item.description}</p>
-                                        )}
-                                        <div className="library-card-meta">
-                                            <span>{formatDate(item.createdAt)}</span>
-                                            <span>{formatSize(item.size)}</span>
-                                        </div>
-                                    </div>
+                                    {renderCardInfo(item)}
 
                                     {/* Actions */}
                                     <div className="library-card-actions">
@@ -440,13 +683,24 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem }: HTMLLibra
                     <div className="library-detail">
                         <div className="library-detail-header">
                             <button onClick={() => setSelectedItem(null)} className="back-btn">
-                                ← Back
+                                &larr; Back
                             </button>
-                            <h3>{selectedItem.title}</h3>
+                            <h3>
+                                {selectedItem.title}
+                                {renderJSXBadge(selectedItem)}
+                            </h3>
                             <div className="library-detail-actions">
                                 <button onClick={() => handleDownload(selectedItem)}>
                                     <DownloadIcon /> Download
                                 </button>
+                                {selectedItem.batchId && onOpenSiteInEditor && (
+                                    <button
+                                        className="batch-editor-btn"
+                                        onClick={() => handleOpenBatchInEditor(selectedItem.batchId!)}
+                                    >
+                                        Open Site in Editor
+                                    </button>
+                                )}
                                 {onSelectItem && (
                                     <button
                                         className="primary"

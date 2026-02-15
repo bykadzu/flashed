@@ -867,6 +867,44 @@ Return ONLY the complete, updated HTML. No explanations or markdown code blocks.
       showSuccess(`Loaded "${item.title}" from library`);
   };
 
+  // Open a batch of library items as a multi-page site session
+  const handleOpenSiteInEditor = (batchItems: HTMLItem[]) => {
+      if (batchItems.length === 0) return;
+
+      const sorted = [...batchItems].sort((a, b) => (a.batchIndex ?? 0) - (b.batchIndex ?? 0));
+
+      const sitePages: SitePage[] = sorted.map((item, i) => ({
+          id: generateId(),
+          name: item.title,
+          slug: i === 0 ? 'home' : item.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+          html: item.content,
+          status: 'complete' as const,
+          isHome: i === 0
+      }));
+
+      const newSite: Site = {
+          id: generateId(),
+          name: sorted[0].title,
+          styleName: 'Uploaded Site',
+          pages: sitePages
+      };
+
+      const newSession: Session = {
+          id: generateId(),
+          prompt: `Imported site: ${sorted[0].title}`,
+          timestamp: Date.now(),
+          artifacts: [],
+          mode: 'site',
+          site: newSite
+      };
+
+      setSessions(prev => [...prev, newSession]);
+      setCurrentSessionIndex(sessions.length);
+      setFocusedArtifactIndex(0);
+      setCurrentSitePageId(sitePages[0].id);
+      showSuccess(`Opened ${sitePages.length}-page site in editor`);
+  };
+
   // Upgrade a single-page variant to a multi-page site
   const handleUpgradeToSite = useCallback((sessionIndex: number, artifactIndex: number) => {
       const session = sessions[sessionIndex];
@@ -1570,6 +1608,7 @@ Return ONLY RAW HTML.
             isOpen={isLibraryOpen}
             onClose={() => setIsLibraryOpen(false)}
             onSelectItem={handleLoadFromLibrary}
+            onOpenSiteInEditor={handleOpenSiteInEditor}
         />
 
         {/* Analytics Dashboard */}
