@@ -214,6 +214,53 @@ const TEMPLATES: Template[] = [
         prompt: 'Home renovation contractor landing page with services, before/after gallery, project process, customer reviews, and free estimate request',
         suggestedStyle: 'Sturdy and reliable',
         previewColor: '#d35400'
+    },
+
+    // NEW: Expanded Industries
+    {
+        id: 'salon-hair',
+        name: 'Hair Salon',
+        industry: 'Wellness',
+        description: 'Hair styling and beauty services',
+        prompt: 'Modern hair salon landing page with services (cuts, color, styling), stylist team, before/after gallery, online booking, loyalty program, and promotions',
+        suggestedStyle: 'Chic and stylish',
+        previewColor: '#e91e63'
+    },
+    {
+        id: 'salon-nail',
+        name: 'Nail Salon',
+        industry: 'Wellness',
+        description: 'Nail art and manicure services',
+        prompt: 'Elegant nail salon landing page with services, nail art gallery, pricing menu, online booking, gift cards, and special event packages',
+        suggestedStyle: 'Feminine and clean',
+        previewColor: '#f06292'
+    },
+    {
+        id: 'plumber-hvac',
+        name: 'Plumber & HVAC',
+        industry: 'Services',
+        description: 'Plumbing and heating services',
+        prompt: 'Professional plumber and HVAC service landing page with 24/7 emergency services, service areas, before/after repairs, customer reviews, online quote request, and service coupons',
+        suggestedStyle: 'Trustworthy and reliable',
+        previewColor: '#1976d2'
+    },
+    {
+        id: 'dentist-family',
+        name: 'Family Dentist',
+        industry: 'Healthcare',
+        description: 'General dentistry for families',
+        prompt: 'Family dental practice landing page with preventive care, cosmetic dentistry, pediatric dentistry, insurance accepted, new patient specials, and easy appointment scheduling',
+        suggestedStyle: 'Warm and professional',
+        previewColor: '#00acc1'
+    },
+    {
+        id: 'salon-barber',
+        name: 'Barber Shop',
+        industry: 'Services',
+        description: 'Classic barber services for men',
+        prompt: 'Traditional barbershop landing page with classic haircuts, beard grooming, hot towel shaves, membership options, walk-ins welcome, and vintage aesthetic',
+        suggestedStyle: 'Classic and masculine',
+        previewColor: '#455a64'
     }
 ];
 
