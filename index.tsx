@@ -25,7 +25,7 @@ import {
     VARIANT_OPTIONS,
     STYLE_FALLBACKS
 } from './constants';
-import { generateId, parseDataUrl } from './utils';
+import { generateId, parseDataUrl, formatTimestamp, formatTimestampCompact } from './utils';
 
 import DottedGlowBackground from './components/DottedGlowBackground';
 import ArtifactCard from './components/ArtifactCard';
@@ -1610,7 +1610,7 @@ Return ONLY RAW HTML.
                     {sessions.map((s, i) => (
                          <div key={s.id} className="sexy-card" onClick={() => handleHistorySelect(i)}>
                              <div className="sexy-label" style={{ borderTop: 'none', borderBottom: '1px solid var(--glass-border)', background: i === currentSessionIndex ? 'rgba(255,255,255,0.1)' : 'transparent' }}>
-                                 {new Date(s.timestamp).toLocaleTimeString()} - {s.prompt}
+                                 {formatTimestampCompact(s.timestamp)} - {s.prompt}
                              </div>
                          </div>
                     ))}

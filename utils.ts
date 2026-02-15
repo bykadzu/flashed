@@ -7,6 +7,39 @@
 export const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
 
 /**
+ * Format a timestamp (number or Date) to a human-readable string
+ * @param timestamp - Unix timestamp in milliseconds or Date object
+ * @returns Formatted string like "Jan 15, 2026 at 2:30 PM"
+ */
+export function formatTimestamp(timestamp: number | Date): string {
+    const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
+    return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+}
+
+/**
+ * Format a timestamp for display in lists (compact form)
+ * @param timestamp - Unix timestamp in milliseconds or Date object
+ * @returns Formatted string like "Jan 15, 2:30 PM"
+ */
+export function formatTimestampCompact(timestamp: number | Date): string {
+    const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
+    return date.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+}
+
+/**
  * Extracts MIME type from a base64 data URL string
  * @param dataUrl - Data URL string (e.g., "data:image/png;base64,...")
  * @returns MIME type string (e.g., "image/png") or fallback to "image/jpeg"
