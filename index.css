@@ -396,7 +396,13 @@ html, body {
 }
 
 .page-tab .home-icon {
-    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+}
+
+.page-tab .home-icon svg {
+    width: 14px;
+    height: 14px;
 }
 
 .page-tab .status-dot {
