@@ -1,14 +1,10 @@
 ## Summary
 
-Improves metadata extraction in the HTML library to provide better fallback behavior when `<title>` is missing.
+The nanoid package was already a dependency but wasn't being used for ID generation in the HTML library. This fix:
 
-### Changes
+- Uses `nanoid()` for generating cryptographically secure, collision-resistant IDs
+- Replaces the weak `Math.random()` + timestamp approach
 
-- Extract `<h1>` as title fallback when `<title>` is missing
-- Extract `og:title` and `og:description` meta tags  
-- Extract `og:image` for thumbnail support
-- Applied same improvements to both `lib/htmlLibrary.ts` and `lumina_library/utils/htmlHelpers.ts`
+## Why
 
-### Why
-
-Previously, if an HTML artifact didn't have a `<title>` tag, the library would show "Untitled Document" even if there was a meaningful `<h1>` heading. This fix provides better automatic title/description extraction from generated HTML.
+`Math.random()` based IDs can collide and are not suitable for unique identifiers. nanoid is already installed as a dependency but wasn't being utilized.
