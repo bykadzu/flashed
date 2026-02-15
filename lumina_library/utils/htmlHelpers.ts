@@ -5,14 +5,27 @@ export const extractMetadata = (html: string) => {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
 
-  const title = doc.querySelector('title')?.textContent || 'Untitled Document';
-  const description = doc.querySelector('meta[name="description"]')?.getAttribute('content') || '';
+  // Title: prefer <title>, then first <h1>, then og:title, then fallback
+  const title = 
+    doc.querySelector('title')?.textContent?.trim() ||
+    doc.querySelector('h1')?.textContent?.trim() ||
+    doc.querySelector('meta[property="og:title"]')?.getAttribute('content') ||
+    'Untitled Document';
+  
+  // Description: prefer meta description, then og:description
+  const description = 
+    doc.querySelector('meta[name="description"]')?.getAttribute('content') ||
+    doc.querySelector('meta[property="og:description"]')?.getAttribute('content') ||
+    '';
+  
+  // Optional: extract og:image for thumbnail
+  const ogImage = doc.querySelector('meta[property="og:image"]')?.getAttribute('content') || undefined;
   
   // Basic favicon extraction (naive)
   const favicon = doc.querySelector('link[rel="icon"]')?.getAttribute('href') || 
                   doc.querySelector('link[rel="shortcut icon"]')?.getAttribute('href') || '';
 
-  return { title, description, favicon };
+  return { title, description, ogImage, favicon };
 };
 
 /**
