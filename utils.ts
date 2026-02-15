@@ -42,33 +42,42 @@ export async function getCroppedImg(
   rotation = 0
 ): Promise<string> {
   const image = await createImage(imageSrc);
-  const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
-
-  if (!ctx) {
-    return '';
+  
+  // If no rotation, use simpler path
+  if (rotation === 0) {
+    const canvas = document.createElement('canvas');
+    canvas.width = pixelCrop.width;
+    canvas.height = pixelCrop.height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return '';
+    
+    ctx.drawImage(
+      image,
+      pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height,
+      0, 0, pixelCrop.width, pixelCrop.height
+    );
+    return canvas.toDataURL('image/jpeg');
   }
 
-  // Calculate new dimensions after rotation
+  // Handle rotation
   const radians = (rotation * Math.PI) / 180;
   const sin = Math.abs(Math.sin(radians));
   const cos = Math.abs(Math.cos(radians));
-  const newWidth = image.width * cos + image.height * sin;
-  const newHeight = image.width * sin + image.height * cos;
+  const rotatedWidth = image.width * cos + image.height * sin;
+  const rotatedHeight = image.width * sin + image.height * cos;
 
-  // Set canvas size to match rotated image
-  canvas.width = newWidth;
-  canvas.height = newHeight;
+  const canvas = document.createElement('canvas');
+  canvas.width = rotatedWidth;
+  canvas.height = rotatedHeight;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return '';
 
-  // Move origin to center for rotation
-  ctx.translate(newWidth / 2, newHeight / 2);
+  // Transform: translate to center, rotate, draw image centered
+  ctx.translate(rotatedWidth / 2, rotatedHeight / 2);
   ctx.rotate(radians);
-  ctx.translate(-image.width / 2, -image.height / 2);
+  ctx.drawImage(image, -image.width / 2, -image.height / 2);
 
-  // Draw rotated image
-  ctx.drawImage(image, 0, 0);
-
-  // Extract cropped image
+  // Extract cropped area from rotated canvas
   const data = ctx.getImageData(
     pixelCrop.x,
     pixelCrop.y,
@@ -81,13 +90,8 @@ export async function getCroppedImg(
   finalCanvas.width = pixelCrop.width;
   finalCanvas.height = pixelCrop.height;
   const finalCtx = finalCanvas.getContext('2d');
-
-  if (!finalCtx) {
-    return '';
-  }
+  if (!finalCtx) return '';
 
   finalCtx.putImageData(data, 0, 0);
-
-  // Return as Base64 string
   return finalCanvas.toDataURL('image/jpeg');
 }
