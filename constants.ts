@@ -15,6 +15,22 @@ export const PLACEHOLDER_CYCLE_INTERVAL = 3000;
 // Content Limits
 export const HTML_PREVIEW_MAX_LENGTH = 3000;
 
+// Multi-variant generation
+export const GENERATION_BATCH_SIZE = 3;
+export const VARIANT_OPTIONS = [3, 5, 10] as const;
+export const STYLE_FALLBACKS = [
+    "Modern Clean",
+    "Bold & Vibrant",
+    "Professional Minimal",
+    "Elegant Serif",
+    "Playful Colorful",
+    "Dark Mode Luxe",
+    "Retro Vintage",
+    "Soft Pastel",
+    "High-Contrast Corporate",
+    "Warm Natural"
+];
+
 // Responsive Breakpoints (in pixels)
 export const MOBILE_BREAKPOINT = 1024;
 

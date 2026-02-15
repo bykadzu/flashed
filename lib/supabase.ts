@@ -191,7 +191,8 @@ export const publishPage = async (
     artifact: Artifact,
     seo: SEOSettings,
     formSettings?: FormSettings,
-    userId?: string
+    userId?: string,
+    batchId?: string
 ): Promise<{ url: string; shortId: string } | { error: string }> => {
     if (!supabase) {
         // Fallback: Generate a data URL for download if Supabase isn't configured
@@ -223,6 +224,11 @@ export const publishPage = async (
         // Associate with user if logged in
         if (userId) {
             pageData.user_id = userId;
+        }
+
+        // Associate with batch if provided
+        if (batchId) {
+            pageData.batch_id = batchId;
         }
         
         let result;

@@ -20,7 +20,10 @@ import {
     PLACEHOLDER_FETCH_DELAY,
     PLACEHOLDER_CYCLE_INTERVAL,
     HTML_PREVIEW_MAX_LENGTH,
-    MOBILE_BREAKPOINT
+    MOBILE_BREAKPOINT,
+    GENERATION_BATCH_SIZE,
+    VARIANT_OPTIONS,
+    STYLE_FALLBACKS
 } from './constants';
 import { generateId, parseDataUrl } from './utils';
 
@@ -133,6 +136,9 @@ function App() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [currentProject, setCurrentProject] = useState<Project | null>(null);
   const [isProjectManagerOpen, setIsProjectManagerOpen] = useState(false);
+
+  // Variant Count State
+  const [variantCount, setVariantCount] = useState<3 | 5 | 10>(3);
 
   // HTML Library State
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
@@ -578,6 +584,31 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
           showSuccess('Saved to library!');
       } catch (e: any) {
           showError(e.message || 'Failed to save to library');
+      }
+  };
+
+  const handleSaveBatchToLibrary = () => {
+      const session = sessions[currentSessionIndex];
+      if (!session) return;
+      const completeArtifacts = session.artifacts.filter(a => a.status === 'complete' && a.html);
+      if (completeArtifacts.length === 0) return;
+
+      try {
+          const batchId = generateId();
+          completeArtifacts.forEach((artifact, index) => {
+              const item = htmlLibrary.createLibraryItem(
+                  artifact.html,
+                  session.prompt,
+                  artifact.seo?.title || `${session.prompt.slice(0, 30)} - ${artifact.styleName}`,
+                  ['batch', `batch-${batchId}`]
+              );
+              item.batchId = batchId;
+              item.batchIndex = index;
+              htmlLibrary.saveItem(item);
+          });
+          showSuccess(`Saved ${completeArtifacts.length} variants to library!`);
+      } catch (e: any) {
+          showError(e.message || 'Failed to save batch to library');
       }
   };
 
@@ -1086,7 +1117,7 @@ Return ONLY RAW HTML.
     }
 
     // Single Page Mode (original behavior)
-    const placeholderArtifacts: Artifact[] = Array(3).fill(null).map((_, i) => ({
+    const placeholderArtifacts: Artifact[] = Array(variantCount).fill(null).map((_, i) => ({
         id: `${sessionId}_${i}`,
         styleName: 'Designing...',
         html: '',
@@ -1098,7 +1129,8 @@ Return ONLY RAW HTML.
         prompt: displayPrompt,
         timestamp: baseTime,
         artifacts: placeholderArtifacts,
-        mode: 'single'
+        mode: 'single',
+        variantCount
     };
 
     setSessions(prev => [...prev, newSession]);
@@ -1117,7 +1149,7 @@ ${currentUrl ? `Context URL: ${currentUrl}.` : ''}
 ${selectedImage ? `Context Image: Attached.` : ''}
 
 **TASK:**
-Analyze the request and determine the 3 most effective and DISTINCT visual styles for this specific use case.
+Analyze the request and determine the ${variantCount} most effective and DISTINCT visual styles for this specific use case.
 Do NOT default to "Luxury" or "SaaS" unless the request specifically fits that.
 Think broad: Retro, Brutalist, Playful, Corporate, Minimalist, Industrial, Nature-inspired, etc.
 
@@ -1126,7 +1158,7 @@ Think broad: Retro, Brutalist, Playful, Corporate, Minimalist, Industrial, Natur
 - If "Law Firm": ["Trustworthy Serif", "High-Contrast Corporate", "Traditional Navy"]
 - If "Dashboard": ["Linear Dark Mode", "Clean Light Glass", "Data-Dense Industrial"]
 
-Return ONLY a raw JSON array of 3 strings describing the specific vibes.
+Return ONLY a raw JSON array of ${variantCount} strings describing the specific vibes.
         `.trim();
 
         const styleRequestParts: any[] = [{ text: stylePrompt }];
@@ -1156,14 +1188,10 @@ Return ONLY a raw JSON array of 3 strings describing the specific vibes.
             }
         }
 
-        if (!generatedStyles || generatedStyles.length < 3) {
-            generatedStyles = [
-                "Modern Clean",
-                "Bold & Vibrant",
-                "Professional Minimal"
-            ];
+        if (!generatedStyles || generatedStyles.length < variantCount) {
+            generatedStyles = STYLE_FALLBACKS.slice(0, variantCount);
         }
-        generatedStyles = generatedStyles.slice(0, 3);
+        generatedStyles = generatedStyles.slice(0, variantCount);
 
         setSessions(prev => prev.map(s => {
             if (s.id !== sessionId) return s;
@@ -1302,7 +1330,11 @@ Return ONLY RAW HTML.
             }
         };
 
-        await Promise.all(placeholderArtifacts.map((art, i) => generateArtifact(art, generatedStyles[i])));
+        // Generate in batches to avoid rate limits
+        for (let batchStart = 0; batchStart < placeholderArtifacts.length; batchStart += GENERATION_BATCH_SIZE) {
+            const batch = placeholderArtifacts.slice(batchStart, batchStart + GENERATION_BATCH_SIZE);
+            await Promise.all(batch.map((art, i) => generateArtifact(art, generatedStyles[batchStart + i])));
+        }
 
     } catch (e: any) {
         showError(e.message || 'Failed to generate designs. Please try again.');
@@ -1310,7 +1342,7 @@ Return ONLY RAW HTML.
         setIsLoading(false);
         setTimeout(() => inputRef.current?.focus(), FOCUS_DELAY);
     }
-  }, [inputValue, urlValue, selectedImage, isLoading, sessions.length, selectedModel, selectedBrandKit, cloneMode]);
+  }, [inputValue, urlValue, selectedImage, isLoading, sessions.length, selectedModel, selectedBrandKit, cloneMode, variantCount]);
 
   const handleSurpriseMe = () => {
       const currentPrompt = placeholders[placeholderIndex];
@@ -1336,11 +1368,12 @@ Return ONLY RAW HTML.
 
   const nextItem = useCallback(() => {
       if (focusedArtifactIndex !== null) {
-          if (focusedArtifactIndex < 2) setFocusedArtifactIndex(focusedArtifactIndex + 1);
+          const maxIndex = (sessions[currentSessionIndex]?.artifacts.length || 3) - 1;
+          if (focusedArtifactIndex < maxIndex) setFocusedArtifactIndex(focusedArtifactIndex + 1);
       } else {
           if (currentSessionIndex < sessions.length - 1) setCurrentSessionIndex(currentSessionIndex + 1);
       }
-  }, [currentSessionIndex, sessions.length, focusedArtifactIndex]);
+  }, [currentSessionIndex, sessions, focusedArtifactIndex]);
 
   const prevItem = useCallback(() => {
       if (focusedArtifactIndex !== null) {
@@ -1564,7 +1597,7 @@ Return ONLY RAW HTML.
                     
                     return (
                         <div key={session.id} className={`session-group ${positionClass}`}>
-                            <div className="artifact-grid" ref={sIndex === currentSessionIndex ? gridScrollRef : null}>
+                            <div className={`artifact-grid ${session.artifacts.length === 5 ? 'grid-5' : session.artifacts.length >= 10 ? 'grid-10' : ''}`} ref={sIndex === currentSessionIndex ? gridScrollRef : null}>
                                 {isSiteSession ? (
                                     // Site mode: render the site with page navigation
                                     <ArtifactCard 
@@ -1634,6 +1667,11 @@ Return ONLY RAW HTML.
                     <button onClick={handleSaveToLibrary}>
                         <BookmarkIcon /> Save
                     </button>
+                    {currentSession && currentSession.artifacts.length > 3 && (
+                        <button onClick={handleSaveBatchToLibrary}>
+                            <LayersIcon /> Save All
+                        </button>
+                    )}
                  </div>
             </div>
 
@@ -1703,6 +1741,20 @@ Return ONLY RAW HTML.
                                 </button>
                             </div>
                         )}
+                        </div>
+
+                        {/* Variant Count Selector */}
+                        <div className="variant-count-selector">
+                            <span className="variant-count-label">Variants</span>
+                            {VARIANT_OPTIONS.map(opt => (
+                                <button
+                                    key={opt}
+                                    className={`variant-count-btn ${variantCount === opt ? 'active' : ''}`}
+                                    onClick={() => setVariantCount(opt)}
+                                >
+                                    {opt}
+                                </button>
+                            ))}
                         </div>
                     </div>
                 )}

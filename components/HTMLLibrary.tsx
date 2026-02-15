@@ -22,6 +22,8 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem }: HTMLLibra
     const [itemToDelete, setItemToDelete] = useState<HTMLItem | null>(null);
     const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
     const [preserveStyling, setPreserveStyling] = useState(true);
+    const [groupByBatch, setGroupByBatch] = useState(false);
+    const [expandedBatches, setExpandedBatches] = useState<Set<string>>(new Set());
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Load library on open
@@ -80,6 +82,41 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem }: HTMLLibra
             }
         });
     }, [items, searchQuery, sortOption]);
+
+    const groupedItems = useMemo(() => {
+        if (!groupByBatch) return null;
+
+        const batches = new Map<string, HTMLItem[]>();
+        const ungrouped: HTMLItem[] = [];
+
+        for (const item of filteredItems) {
+            if (item.batchId) {
+                const existing = batches.get(item.batchId) || [];
+                existing.push(item);
+                batches.set(item.batchId, existing);
+            } else {
+                ungrouped.push(item);
+            }
+        }
+
+        // Sort batch items by batchIndex
+        for (const [, batchItems] of batches) {
+            batchItems.sort((a, b) => (a.batchIndex ?? 0) - (b.batchIndex ?? 0));
+        }
+
+        return { batches, ungrouped };
+    }, [filteredItems, groupByBatch]);
+
+    const toggleBatchExpanded = (batchId: string) => {
+        setExpandedBatches(prev => {
+            const next = new Set(prev);
+            if (next.has(batchId)) next.delete(batchId);
+            else next.add(batchId);
+            return next;
+        });
+    };
+
+    const hasBatchItems = items.some(item => item.batchId);
 
     const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
@@ -233,6 +270,16 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem }: HTMLLibra
                     >
                         <UploadIcon /> Upload
                     </button>
+
+                    {hasBatchItems && (
+                        <button
+                            className={`library-group-toggle ${groupByBatch ? 'active' : ''}`}
+                            onClick={() => setGroupByBatch(!groupByBatch)}
+                            aria-label="Group by batch"
+                        >
+                            <LayersIcon /> Group
+                        </button>
+                    )}
                 </div>
 
                 {/* Content */}
@@ -242,6 +289,93 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem }: HTMLLibra
                             <LayersIcon />
                             <h3>Library is empty</h3>
                             <p>Generate a page and click "Save to Library" to add it here.</p>
+                        </div>
+                    ) : groupByBatch && groupedItems ? (
+                        <div className="library-grid">
+                            {/* Render batch groups */}
+                            {Array.from(groupedItems.batches.entries()).map(([batchId, batchItems]) => {
+                                const isExpanded = expandedBatches.has(batchId);
+                                const firstItem = batchItems[0];
+                                return (
+                                    <React.Fragment key={`batch-${batchId}`}>
+                                        <div className="batch-group" style={{ gridColumn: '1 / -1' }}>
+                                            <div className="batch-group-header" onClick={() => toggleBatchExpanded(batchId)}>
+                                                <div className="batch-info">
+                                                    <LayersIcon />
+                                                    <span>{firstItem.prompt?.slice(0, 40) || 'Batch'}</span>
+                                                    <span className="batch-count">{batchItems.length} variants</span>
+                                                </div>
+                                                <span style={{ color: 'var(--text-secondary)', fontSize: '0.8rem' }}>
+                                                    {isExpanded ? '▼' : '▶'} {formatDate(firstItem.createdAt)}
+                                                </span>
+                                            </div>
+                                            {!isExpanded && (
+                                                <div className="batch-stacked-preview" onClick={() => toggleBatchExpanded(batchId)}>
+                                                    {batchItems.slice(0, 3).map((item, i) => (
+                                                        <div key={item.id} className="batch-stack-card" />
+                                                    ))}
+                                                </div>
+                                            )}
+                                            {isExpanded && (
+                                                <div className="batch-group-items">
+                                                    {batchItems.map(item => (
+                                                        <div
+                                                            key={item.id}
+                                                            className={`library-card ${selectedItem?.id === item.id ? 'selected' : ''}`}
+                                                            onClick={() => setSelectedItem(item)}
+                                                        >
+                                                            <div className="library-card-preview">
+                                                                <div className="library-card-iframe-wrapper">
+                                                                    <iframe srcDoc={item.content} title={item.title} sandbox="allow-same-origin" />
+                                                                </div>
+                                                                <div className="library-card-overlay"><span>View</span></div>
+                                                            </div>
+                                                            <div className="library-card-info">
+                                                                <h4>{item.title}</h4>
+                                                                <div className="library-card-meta">
+                                                                    <span>{formatDate(item.createdAt)}</span>
+                                                                    <span>{formatSize(item.size)}</span>
+                                                                </div>
+                                                            </div>
+                                                            <div className="library-card-actions">
+                                                                <button onClick={(e) => { e.stopPropagation(); handleDownload(item); }} title="Download" aria-label="Download page"><DownloadIcon /></button>
+                                                                <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(item); }} title="Delete" aria-label="Delete page" className="delete-btn"><TrashIcon /></button>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </React.Fragment>
+                                );
+                            })}
+                            {/* Render ungrouped items */}
+                            {groupedItems.ungrouped.map(item => (
+                                <div
+                                    key={item.id}
+                                    className={`library-card ${selectedItem?.id === item.id ? 'selected' : ''}`}
+                                    onClick={() => setSelectedItem(item)}
+                                >
+                                    <div className="library-card-preview">
+                                        <div className="library-card-iframe-wrapper">
+                                            <iframe srcDoc={item.content} title={item.title} sandbox="allow-same-origin" />
+                                        </div>
+                                        <div className="library-card-overlay"><span>View</span></div>
+                                    </div>
+                                    <div className="library-card-info">
+                                        <h4>{item.title}</h4>
+                                        {item.description && <p className="library-card-desc">{item.description}</p>}
+                                        <div className="library-card-meta">
+                                            <span>{formatDate(item.createdAt)}</span>
+                                            <span>{formatSize(item.size)}</span>
+                                        </div>
+                                    </div>
+                                    <div className="library-card-actions">
+                                        <button onClick={(e) => { e.stopPropagation(); handleDownload(item); }} title="Download" aria-label="Download page"><DownloadIcon /></button>
+                                        <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(item); }} title="Delete" aria-label="Delete page" className="delete-btn"><TrashIcon /></button>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     ) : (
                         <div className="library-grid">

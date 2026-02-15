@@ -1655,6 +1655,167 @@ html, body {
     border-radius: 50%;
 }
 
+/* === Variant Count Selector === */
+.variant-count-selector {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+    padding: 3px 4px 3px 10px;
+}
+
+.variant-count-label {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-right: 4px;
+    white-space: nowrap;
+}
+
+.variant-count-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 4px 10px;
+    border-radius: 14px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 28px;
+    text-align: center;
+}
+
+.variant-count-btn:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.variant-count-btn.active {
+    background: rgba(255, 255, 255, 0.15);
+    color: var(--text-primary);
+    font-weight: 600;
+}
+
+/* === Dynamic Grid Layouts for 5 & 10 variants === */
+.artifact-grid.grid-5 {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 16px;
+}
+
+.artifact-grid.grid-5 .artifact-header {
+    padding: 8px 10px;
+    font-size: 0.7rem;
+}
+
+.artifact-grid.grid-10 {
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: 1fr 1fr;
+    gap: 12px;
+    height: 80vh;
+    overflow-y: auto;
+}
+
+.artifact-grid.grid-10 .artifact-header {
+    padding: 6px 8px;
+    font-size: 0.65rem;
+}
+
+/* === Batch Library Styles === */
+.batch-group {
+    position: relative;
+}
+
+.batch-group-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin-bottom: 8px;
+}
+
+.batch-group-header:hover {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.batch-group-header .batch-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.batch-group-header .batch-count {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.batch-group-items {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+    padding-left: 12px;
+    border-left: 2px solid rgba(255, 255, 255, 0.06);
+    margin-left: 8px;
+    margin-bottom: 16px;
+}
+
+.batch-stacked-preview {
+    position: relative;
+    width: 100%;
+    height: 160px;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.batch-stacked-preview .batch-stack-card {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: #111;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    transition: transform 0.2s ease;
+}
+
+.batch-stacked-preview .batch-stack-card:nth-child(1) { transform: rotate(-2deg) translate(-4px, -4px); }
+.batch-stacked-preview .batch-stack-card:nth-child(2) { transform: rotate(1deg) translate(2px, -2px); }
+.batch-stacked-preview .batch-stack-card:nth-child(3) { transform: none; }
+
+.library-group-toggle {
+    background: transparent;
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.2s;
+}
+
+.library-group-toggle:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+    color: var(--text-primary);
+}
+
+.library-group-toggle.active {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+    color: var(--text-primary);
+}
+
 /* === Project Manager === */
 .projects-list {
     display: flex;
@@ -2492,8 +2653,11 @@ html, body {
         display: none !important;
     }
 
-    .artifact-grid {
+    .artifact-grid,
+    .artifact-grid.grid-5,
+    .artifact-grid.grid-10 {
         grid-template-columns: 1fr;
+        grid-template-rows: none;
         height: 100%;
         max-height: 100vh;
         overflow-y: auto;

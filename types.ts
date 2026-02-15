@@ -69,6 +69,8 @@ export interface Session {
     // Multi-site support
     site?: Site;
     mode?: 'single' | 'site';
+    // Multi-variant support
+    variantCount?: number;
 }
 
 export interface ComponentVariation { name: string; html: string; }
@@ -123,6 +125,8 @@ export interface HTMLItem {
     thumbnail?: string; // Optional screenshot/preview
     size: number;
     prompt?: string; // Original prompt used to generate
+    batchId?: string; // Groups batch-saved library items
+    batchIndex?: number; // Position within batch
 }
 
 export type LibrarySortOption = 'newest' | 'oldest' | 'name' | 'size';
@@ -143,4 +147,5 @@ export interface PublishedPage {
     user_id?: string;
     project_id?: string;
     custom_domain?: string;
+    batch_id?: string; // Groups published batch pages
 }
