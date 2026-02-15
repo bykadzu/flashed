@@ -561,10 +561,17 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
             });
 
             let html = response.text || '';
-            // Clean up code blocks if present
-            if (html.startsWith('```html')) html = html.substring(7).trimStart();
-            if (html.startsWith('```')) html = html.substring(3).trimStart();
-            if (html.endsWith('```')) html = html.substring(0, html.length - 3).trimEnd();
+            // Clean up code blocks if present using utility function
+            html = cleanHtmlResponse(html);
+            
+            // Validate HTML structure
+            if (!isValidHtml(html)) {
+              console.warn("Variation HTML failed validation");
+              const htmlMatch = html.match(/<html[\s\S]*<\/html>/i);
+              if (htmlMatch) {
+                html = htmlMatch[0];
+              }
+            }
 
             return { name: style.name, html };
         };
@@ -791,10 +798,17 @@ Return ONLY the complete, updated HTML. No explanations or markdown code blocks.
           }
           
           // Clean up code blocks if present
-          let finalHtml = accumulatedHtml.trim();
-          if (finalHtml.startsWith('```html')) finalHtml = finalHtml.substring(7).trimStart();
-          if (finalHtml.startsWith('```')) finalHtml = finalHtml.substring(3).trimStart();
-          if (finalHtml.endsWith('```')) finalHtml = finalHtml.substring(0, finalHtml.length - 3).trimEnd();
+          let finalHtml = cleanHtmlResponse(accumulatedHtml);
+          
+          // Validate HTML structure
+          if (!isValidHtml(finalHtml)) {
+            console.warn("Generated HTML failed validation, attempting cleanup");
+            // Try to extract any HTML from the response
+            const htmlMatch = finalHtml.match(/<html[\s\S]*<\/html>/i);
+            if (htmlMatch) {
+              finalHtml = htmlMatch[0];
+            }
+          }
           
           setSessions(prev => prev.map((sess, i) => 
               i === currentSessionIndex ? {
@@ -1239,11 +1253,17 @@ Return ONLY RAW HTML.
                     }
                 }
                 
-                // Clean up
-                let finalHtml = accumulatedHtml.trim();
-                if (finalHtml.startsWith('```html')) finalHtml = finalHtml.substring(7).trimStart();
-                if (finalHtml.startsWith('```')) finalHtml = finalHtml.substring(3).trimStart();
-                if (finalHtml.endsWith('```')) finalHtml = finalHtml.substring(0, finalHtml.length - 3).trimEnd();
+                // Clean up using utility function
+                let finalHtml = cleanHtmlResponse(accumulatedHtml);
+                
+                // Validate HTML structure
+                if (!isValidHtml(finalHtml)) {
+                  console.warn("Site page HTML failed validation");
+                  const htmlMatch = finalHtml.match(/<html[\s\S]*<\/html>/i);
+                  if (htmlMatch) {
+                    finalHtml = htmlMatch[0];
+                  }
+                }
                 
                 setSessions(prev => prev.map(s => 
                     s.id === sessionId && s.site ? {
@@ -1453,11 +1473,15 @@ Return ONLY RAW HTML.
                     }
                 }
                 
-                let finalHtml = accumulatedHtml.trim();
-                // Basic cleanup if the model wraps in code blocks
-                if (finalHtml.startsWith('```html')) finalHtml = finalHtml.substring(7).trimStart();
-                if (finalHtml.startsWith('```')) finalHtml = finalHtml.substring(3).trimStart();
-                if (finalHtml.endsWith('```')) finalHtml = finalHtml.substring(0, finalHtml.length - 3).trimEnd();
+                let finalHtml = cleanHtmlResponse(accumulatedHtml);
+                // Validate HTML structure
+                if (!isValidHtml(finalHtml)) {
+                  console.warn("Artifact HTML failed validation");
+                  const htmlMatch = finalHtml.match(/<html[\s\S]*<\/html>/i);
+                  if (htmlMatch) {
+                    finalHtml = htmlMatch[0];
+                  }
+                }
 
                 setSessions(prev => prev.map(sess => 
                     sess.id === sessionId ? {
