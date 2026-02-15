@@ -69,6 +69,7 @@ import Sidebar from './components/Sidebar';
 import HTMLLibrary from './components/HTMLLibrary';
 import Toast, { useToast } from './components/Toast';
 import * as htmlLibrary from './lib/htmlLibrary';
+import JSZip from 'jszip';
 
 function App() {
   // Get current user (safe hook that works with or without Clerk)
@@ -302,18 +303,41 @@ function App() {
       setPendingImageReplacement(null);
   };
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (focusedArtifactIndex === null) return;
     const currentSession = sessions[currentSessionIndex];
     if (!currentSession) return;
-    const artifact = currentSession.artifacts[focusedArtifactIndex];
 
-    // Use session title (nickname) for filename, sanitized for safe filenames
-    const siteName = currentSession.title
+    const siteName = (currentSession.prompt || 'flash-ui')
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '')
+      .substring(0, 50)
       || 'flash-ui';
+
+    // Multi-page site: export as ZIP
+    if (currentSession.mode === 'site' && currentSession.site) {
+      const zip = new JSZip();
+      for (const page of currentSession.site.pages) {
+        if (!page.html) continue;
+        const filename = page.isHome ? 'index.html' : `${page.slug}.html`;
+        zip.file(filename, page.html);
+      }
+      const content = await zip.generateAsync({ type: 'blob' });
+      const url = URL.createObjectURL(content);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${siteName}-site.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      return;
+    }
+
+    // Single page: download HTML
+    const artifact = currentSession.artifacts[focusedArtifactIndex];
+    if (!artifact) return;
 
     const blob = new Blob([artifact.html], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
@@ -815,6 +839,47 @@ Return ONLY the complete, updated HTML. No explanations or markdown code blocks.
       setFocusedArtifactIndex(0);
       showSuccess(`Loaded "${item.title}" from library`);
   };
+
+  // Upgrade a single-page variant to a multi-page site
+  const handleUpgradeToSite = useCallback((sessionIndex: number, artifactIndex: number) => {
+      const session = sessions[sessionIndex];
+      if (!session) return;
+      const artifact = session.artifacts[artifactIndex];
+      if (!artifact || artifact.status !== 'complete') return;
+
+      const homePageId = generateId();
+      const homePage: SitePage = {
+          id: homePageId,
+          name: 'Home',
+          slug: 'home',
+          html: artifact.html,
+          status: 'complete',
+          isHome: true
+      };
+
+      const newSite: Site = {
+          id: generateId(),
+          name: session.prompt.substring(0, 50),
+          styleName: artifact.styleName,
+          pages: [homePage],
+          seo: artifact.seo,
+          publishInfo: artifact.publishInfo,
+          formSettings: artifact.formSettings
+      };
+
+      setSessions(prev => prev.map((s, i) =>
+          i === sessionIndex ? {
+              ...s,
+              mode: 'site' as const,
+              site: newSite,
+              artifacts: s.artifacts // keep artifacts for reference
+          } : s
+      ));
+
+      setCurrentSitePageId(homePageId);
+      setFocusedArtifactIndex(0);
+      showSuccess('Upgraded to multi-page site! Add more pages with the + button.');
+  }, [sessions]);
 
   // Add Page to existing site
   const handleAddPage = useCallback(async (sessionId: string) => {
@@ -1652,25 +1717,51 @@ Return ONLY RAW HTML.
                     {currentSession?.prompt}
                  </div>
                  <div className="action-buttons">
-                    <button onClick={() => setFocusedArtifactIndex(null)}>
-                        <GridIcon /> Grid
-                    </button>
-                    <button onClick={handleGenerateVariations} disabled={isLoading}>
-                        <SparklesIcon /> Variations
-                    </button>
-                    <button onClick={handleShowCode}>
-                        <CodeIcon /> Source
-                    </button>
-                    <button onClick={handleDownload}>
-                        <DownloadIcon /> Download
-                    </button>
-                    <button onClick={handleSaveToLibrary}>
-                        <BookmarkIcon /> Save
-                    </button>
-                    {currentSession && currentSession.artifacts.length > 3 && (
-                        <button onClick={handleSaveBatchToLibrary}>
-                            <LayersIcon /> Save All
-                        </button>
+                    {currentSession?.mode === 'site' ? (
+                        <>
+                            <button onClick={() => setFocusedArtifactIndex(null)}>
+                                <GridIcon /> Grid
+                            </button>
+                            <button onClick={handleShowCode}>
+                                <CodeIcon /> Source
+                            </button>
+                            <button onClick={handleDownload}>
+                                <DownloadIcon /> Download
+                            </button>
+                            <button onClick={handleSaveToLibrary}>
+                                <BookmarkIcon /> Save
+                            </button>
+                        </>
+                    ) : (
+                        <>
+                            <button onClick={() => setFocusedArtifactIndex(null)}>
+                                <GridIcon /> Grid
+                            </button>
+                            <button
+                                className="upgrade-to-site-btn"
+                                onClick={() => handleUpgradeToSite(currentSessionIndex, focusedArtifactIndex!)}
+                                disabled={isLoading || currentSession?.artifacts[focusedArtifactIndex!]?.status !== 'complete'}
+                            >
+                                <LayersIcon /> Upgrade to Multi-Site
+                            </button>
+                            <button onClick={handleGenerateVariations} disabled={isLoading}>
+                                <SparklesIcon /> Variations
+                            </button>
+                            <button onClick={handleShowCode}>
+                                <CodeIcon /> Source
+                            </button>
+                            <button onClick={handleDownload}>
+                                <DownloadIcon /> Download
+                            </button>
+                            <button onClick={handleSaveToLibrary}>
+                                <BookmarkIcon /> Save
+                            </button>
+                            {currentSession && currentSession.artifacts.length > 3 && (
+                                <button onClick={handleSaveBatchToLibrary}>
+                                    <LayersIcon /> Save All
+                                </button>
+                            )}
+                        </>
                     )}
                  </div>
             </div>
