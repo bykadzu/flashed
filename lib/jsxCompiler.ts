@@ -5,18 +5,47 @@
 
 let babelLoaded = false;
 
+export class JSXCompilationError extends Error {
+    constructor(message: string, public readonly cause?: Error) {
+        super(message);
+        this.name = 'JSXCompilationError';
+    }
+}
+
 export async function compileJSX(source: string, filename: string): Promise<string> {
-    if (!babelLoaded) {
-        await loadBabelStandalone();
-        babelLoaded = true;
+    if (!source || !source.trim()) {
+        throw new JSXCompilationError('Source code is empty');
     }
 
-    const compiled = (window as any).Babel.transform(source, {
-        presets: ['react', 'typescript'],
-        filename
-    }).code;
+    try {
+        if (!babelLoaded) {
+            await loadBabelStandalone();
+            babelLoaded = true;
+        }
 
-    return wrapInHTML(compiled, filename);
+        if (!(window as any).Babel) {
+            throw new JSXCompilationError('Babel not available after loading');
+        }
+
+        const compiled = (window as any).Babel.transform(source, {
+            presets: ['react', 'typescript'],
+            filename
+        });
+
+        if (!compiled?.code) {
+            throw new JSXCompilationError('Babel returned empty output');
+        }
+
+        return wrapInHTML(compiled.code, filename);
+    } catch (err) {
+        if (err instanceof JSXCompilationError) {
+            throw err;
+        }
+        throw new JSXCompilationError(
+            `Failed to compile ${filename}: ${err instanceof Error ? err.message : 'Unknown error'}`,
+            err instanceof Error ? err : undefined
+        );
+    }
 }
 
 function wrapInHTML(jsCode: string, title: string): string {
