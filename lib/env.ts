@@ -21,6 +21,9 @@ export const ENV = {
     // Clerk
     CLERK_PUBLISHABLE_KEY: import.meta.env.VITE_CLERK_PUBLISHABLE_KEY || '',
 
+    // Unsplash
+    UNSPLASH_ACCESS_KEY: import.meta.env.VITE_UNSPLASH_ACCESS_KEY || '',
+
     // App Config
     PUBLIC_URL: import.meta.env.VITE_PUBLIC_URL || (typeof window !== 'undefined' ? window.location.origin : ''),
 } as const;
@@ -29,7 +32,7 @@ export const ENV = {
 const REQUIRED_ENV_VARS = ['OPENROUTER_API_KEY'] as const;
 
 // Optional but recommended - features will be limited without these
-const RECOMMENDED_ENV_VARS = ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'CLERK_PUBLISHABLE_KEY'] as const;
+const RECOMMENDED_ENV_VARS = ['SUPABASE_URL', 'SUPABASE_ANON_KEY', 'CLERK_PUBLISHABLE_KEY', 'UNSPLASH_ACCESS_KEY'] as const;
 
 export interface EnvValidationResult {
     valid: boolean;
@@ -94,4 +97,11 @@ export function isSupabaseConfigured(): boolean {
  */
 export function isClerkConfigured(): boolean {
     return !!ENV.CLERK_PUBLISHABLE_KEY;
+}
+
+/**
+ * Check if Unsplash image integration is configured
+ */
+export function isUnsplashConfigured(): boolean {
+    return !!ENV.UNSPLASH_ACCESS_KEY;
 }
