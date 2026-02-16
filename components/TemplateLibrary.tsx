@@ -261,6 +261,26 @@ const TEMPLATES: Template[] = [
         prompt: 'Traditional barbershop landing page with classic haircuts, beard grooming, hot towel shaves, membership options, walk-ins welcome, and vintage aesthetic',
         suggestedStyle: 'Classic and masculine',
         previewColor: '#455a64'
+    },
+
+    // Swiss Market Specific
+    {
+        id: 'physio-swiss',
+        name: 'Physiotherapy Practice',
+        industry: 'Healthcare',
+        description: 'Physical therapy in Switzerland',
+        prompt: 'Swiss physiotherapy practice landing page with treatments, therapist qualifications (Steiner licensed), appointment booking, insurance billing info (KVG/VVG), and location with parking',
+        suggestedStyle: 'Professional Swiss healthcare',
+        previewColor: '#00897b'
+    },
+    {
+        id: 'immobilienmakler',
+        name: 'Real Estate Agent',
+        industry: 'Real Estate',
+        description: 'Swiss real estate services',
+        prompt: 'Swiss real estate agent landing page with property listings, property search, sold properties, agent profile, financing advice, and contact form in German/Swiss German',
+        suggestedStyle: 'Premium Swiss real estate',
+        previewColor: '#6d4c41'
     }
 ];
 
