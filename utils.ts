@@ -18,7 +18,7 @@ export const generateId = () => nanoid(12);
  */
 export function formatTimestamp(timestamp: number | Date): string {
     const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString(undefined, {
         month: 'short',
         day: 'numeric',
         year: 'numeric',
@@ -35,7 +35,7 @@ export function formatTimestamp(timestamp: number | Date): string {
  */
 export function formatTimestampCompact(timestamp: number | Date): string {
     const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString(undefined, {
         month: 'short',
         day: 'numeric',
         hour: 'numeric',
