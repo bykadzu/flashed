@@ -2,6 +2,7 @@
  * HTML Library storage utilities
  */
 
+import { nanoid } from 'nanoid';
 import { HTMLItem } from '../types';
 
 const STORAGE_KEY = 'flashed_library_v1';
@@ -49,10 +50,23 @@ export const extractMetadata = (html: string) => {
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
 
-    const title = doc.querySelector('title')?.textContent || 'Untitled Document';
-    const description = doc.querySelector('meta[name="description"]')?.getAttribute('content') || '';
+    // Title: prefer <title>, then first <h1>, then og:title, then fallback
+    const title = 
+        doc.querySelector('title')?.textContent?.trim() ||
+        doc.querySelector('h1')?.textContent?.trim() ||
+        doc.querySelector('meta[property="og:title"]')?.getAttribute('content') ||
+        'Untitled Document';
+    
+    // Description: prefer meta description, then og:description
+    const description = 
+        doc.querySelector('meta[name="description"]')?.getAttribute('content') ||
+        doc.querySelector('meta[property="og:description"]')?.getAttribute('content') ||
+        '';
+    
+    // Optional: extract og:image for thumbnail
+    const ogImage = doc.querySelector('meta[property="og:image"]')?.getAttribute('content') || undefined;
 
-    return { title, description };
+    return { title, description, ogImage };
 };
 
 /**
@@ -66,7 +80,7 @@ export const createLibraryItem = (
 ): HTMLItem => {
     const metadata = extractMetadata(html);
     return {
-        id: Math.random().toString(36).substring(2, 9) + Date.now().toString(36),
+        id: nanoid(),
         title: title || metadata.title || prompt.slice(0, 50),
         description: metadata.description || prompt,
         content: html,
