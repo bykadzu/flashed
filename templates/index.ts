@@ -1,11 +1,13 @@
 /**
- * TemplateLibrary - Pre-built templates organized by industry
+ * Flashed Template Library
+ * Pre-built landing page templates organized by industry
+ * 
+ * To add a new template:
+ * 1. Add it to this file
+ * 2. The UI will automatically pick it up
  */
 
-import React, { useState, useEffect } from 'react';
-import { XIcon, TemplateIcon } from './Icons';
-
-interface Template {
+export interface Template {
     id: string;
     name: string;
     industry: string;
@@ -13,16 +15,11 @@ interface Template {
     prompt: string;
     suggestedStyle?: string;
     previewColor: string;
+    isSwiss?: boolean; // Swiss market specific
 }
 
-interface TemplateLibraryProps {
-    isOpen: boolean;
-    onClose: () => void;
-    onSelectTemplate: (prompt: string) => void;
-}
-
-const TEMPLATES: Template[] = [
-    // Restaurant & Food
+export const TEMPLATES: Template[] = [
+    // ============ Restaurant & Food ============
     {
         id: 'restaurant-fine',
         name: 'Fine Dining Restaurant',
@@ -51,7 +48,7 @@ const TEMPLATES: Template[] = [
         previewColor: '#6b4423'
     },
     
-    // Professional Services
+    // ============ Professional Services ============
     {
         id: 'lawyer-corporate',
         name: 'Law Firm',
@@ -80,7 +77,7 @@ const TEMPLATES: Template[] = [
         previewColor: '#0f4c75'
     },
     
-    // Health & Wellness
+    // ============ Health & Wellness ============
     {
         id: 'medical-clinic',
         name: 'Medical Clinic',
@@ -118,7 +115,7 @@ const TEMPLATES: Template[] = [
         previewColor: '#9c89b8'
     },
     
-    // Real Estate
+    // ============ Real Estate ============
     {
         id: 'realestate-luxury',
         name: 'Luxury Real Estate',
@@ -138,7 +135,7 @@ const TEMPLATES: Template[] = [
         previewColor: '#00b894'
     },
     
-    // Tech & SaaS
+    // ============ Tech & SaaS ============
     {
         id: 'saas-startup',
         name: 'SaaS Product',
@@ -167,7 +164,7 @@ const TEMPLATES: Template[] = [
         previewColor: '#e84545'
     },
     
-    // Education
+    // ============ Education ============
     {
         id: 'school-private',
         name: 'Private School',
@@ -187,7 +184,7 @@ const TEMPLATES: Template[] = [
         previewColor: '#f59e0b'
     },
     
-    // Events & Services
+    // ============ Events & Creative ============
     {
         id: 'wedding-planner',
         name: 'Wedding Planner',
@@ -206,6 +203,8 @@ const TEMPLATES: Template[] = [
         suggestedStyle: 'Minimal image-focused',
         previewColor: '#2d3436'
     },
+    
+    // ============ Construction & Services ============
     {
         id: 'contractor-home',
         name: 'Home Contractor',
@@ -215,8 +214,26 @@ const TEMPLATES: Template[] = [
         suggestedStyle: 'Sturdy and reliable',
         previewColor: '#d35400'
     },
+    {
+        id: 'plumber-hvac',
+        name: 'Plumber & HVAC',
+        industry: 'Services',
+        description: 'Plumbing and heating services',
+        prompt: 'Professional plumber and HVAC service landing page with 24/7 emergency services, service areas, before/after repairs, customer reviews, online quote request, and service coupons',
+        suggestedStyle: 'Trustworthy and reliable',
+        previewColor: '#1976d2'
+    },
+    {
+        id: 'salon-barber',
+        name: 'Barber Shop',
+        industry: 'Services',
+        description: 'Classic barber services for men',
+        prompt: 'Traditional barbershop landing page with classic haircuts, beard grooming, hot towel shaves, membership options, walk-ins welcome, and vintage aesthetic',
+        suggestedStyle: 'Classic and masculine',
+        previewColor: '#455a64'
+    },
 
-    // NEW: Expanded Industries
+    // ============ Additional Wellness ============
     {
         id: 'salon-hair',
         name: 'Hair Salon',
@@ -236,15 +253,6 @@ const TEMPLATES: Template[] = [
         previewColor: '#f06292'
     },
     {
-        id: 'plumber-hvac',
-        name: 'Plumber & HVAC',
-        industry: 'Services',
-        description: 'Plumbing and heating services',
-        prompt: 'Professional plumber and HVAC service landing page with 24/7 emergency services, service areas, before/after repairs, customer reviews, online quote request, and service coupons',
-        suggestedStyle: 'Trustworthy and reliable',
-        previewColor: '#1976d2'
-    },
-    {
         id: 'dentist-family',
         name: 'Family Dentist',
         industry: 'Healthcare',
@@ -253,17 +261,8 @@ const TEMPLATES: Template[] = [
         suggestedStyle: 'Warm and professional',
         previewColor: '#00acc1'
     },
-    {
-        id: 'salon-barber',
-        name: 'Barber Shop',
-        industry: 'Services',
-        description: 'Classic barber services for men',
-        prompt: 'Traditional barbershop landing page with classic haircuts, beard grooming, hot towel shaves, membership options, walk-ins welcome, and vintage aesthetic',
-        suggestedStyle: 'Classic and masculine',
-        previewColor: '#455a64'
-    },
 
-    // Swiss Market Specific
+    // ============ Swiss Market Specific ============
     {
         id: 'physio-swiss',
         name: 'Physiotherapy Practice',
@@ -271,7 +270,8 @@ const TEMPLATES: Template[] = [
         description: 'Physical therapy in Switzerland',
         prompt: 'Swiss physiotherapy practice landing page with treatments, therapist qualifications (Steiner licensed), appointment booking, insurance billing info (KVG/VVG), and location with parking',
         suggestedStyle: 'Professional Swiss healthcare',
-        previewColor: '#00897b'
+        previewColor: '#00897b',
+        isSwiss: true
     },
     {
         id: 'immobilienmakler',
@@ -280,121 +280,20 @@ const TEMPLATES: Template[] = [
         description: 'Swiss real estate services',
         prompt: 'Swiss real estate agent landing page with property listings, property search, sold properties, agent profile, financing advice, and contact form in German/Swiss German',
         suggestedStyle: 'Premium Swiss real estate',
-        previewColor: '#6d4c41'
+        previewColor: '#6d4c41',
+        isSwiss: true
     }
 ];
 
-const INDUSTRIES = [...new Set(TEMPLATES.map(t => t.industry))];
+// Get unique industries for filter
+export const INDUSTRIES = [...new Set(TEMPLATES.map(t => t.industry))];
 
-export default function TemplateLibrary({ isOpen, onClose, onSelectTemplate }: TemplateLibraryProps) {
-    const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
-    const [searchQuery, setSearchQuery] = useState('');
-    
-    const filteredTemplates = TEMPLATES.filter(t => {
-        const matchesIndustry = !selectedIndustry || t.industry === selectedIndustry;
-        const matchesSearch = !searchQuery || 
-            t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            t.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            t.industry.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesIndustry && matchesSearch;
-    });
-    
-    const handleSelect = (template: Template) => {
-        onSelectTemplate(template.prompt);
-        onClose();
-    };
+// Helper: Get templates by industry
+export function getTemplatesByIndustry(industry: string): Template[] {
+    return TEMPLATES.filter(t => t.industry === industry);
+}
 
-    // Handle escape key
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'Escape' && isOpen) {
-                onClose();
-            }
-        };
-
-        document.addEventListener('keydown', handleKeyDown);
-        return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [isOpen, onClose]);
-
-    if (!isOpen) return null;
-
-    return (
-        <div className="publish-modal-overlay" onClick={onClose}>
-            <div className="publish-modal template-library-modal" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="template-title">
-                <div className="publish-modal-header">
-                    <h2 id="template-title">
-                        <TemplateIcon /> Template Library
-                    </h2>
-                    <button className="close-button" onClick={onClose} aria-label="Close template library">
-                        <XIcon />
-                    </button>
-                </div>
-                
-                <div className="template-filters">
-                    <input
-                        type="text"
-                        placeholder="Search templates..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="template-search"
-                    />
-                    
-                    <div className="industry-filters">
-                        <button 
-                            className={`industry-filter ${!selectedIndustry ? 'active' : ''}`}
-                            onClick={() => setSelectedIndustry(null)}
-                        >
-                            All
-                        </button>
-                        {INDUSTRIES.map(industry => (
-                            <button
-                                key={industry}
-                                className={`industry-filter ${selectedIndustry === industry ? 'active' : ''}`}
-                                onClick={() => setSelectedIndustry(industry)}
-                            >
-                                {industry}
-                            </button>
-                        ))}
-                    </div>
-                </div>
-                
-                <div className="publish-modal-body template-body">
-                    <div className="template-grid">
-                        {filteredTemplates.map(template => (
-                            <div 
-                                key={template.id}
-                                className="template-card"
-                                onClick={() => handleSelect(template)}
-                            >
-                                <div 
-                                    className="template-preview"
-                                    style={{ background: template.previewColor }}
-                                >
-                                    <div className="template-preview-content">
-                                        <div className="preview-nav"></div>
-                                        <div className="preview-hero"></div>
-                                        <div className="preview-section"></div>
-                                    </div>
-                                </div>
-                                <div className="template-info">
-                                    <span className="template-industry">{template.industry}</span>
-                                    <h3>{template.name}</h3>
-                                    <p>{template.description}</p>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                    
-                    {filteredTemplates.length === 0 && (
-                        <div className="no-templates">
-                            <p>No templates match your search.</p>
-                            <button onClick={() => { setSearchQuery(''); setSelectedIndustry(null); }}>
-                                Clear filters
-                            </button>
-                        </div>
-                    )}
-                </div>
-            </div>
-        </div>
-    );
+// Helper: Get Swiss-specific templates
+export function getSwissTemplates(): Template[] {
+    return TEMPLATES.filter(t => t.isSwiss);
 }

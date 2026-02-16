@@ -8,6 +8,7 @@
 
 import { createOpenRouterClient, DEFAULT_MODEL, getStoredModel, setStoredModel, ModelId } from './lib/openrouter';
 import { getApiKey, validateEnv, ENV } from './lib/env';
+import { fetchImagesForPrompt } from './lib/unsplash';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
 import { ClerkProvider, SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react';
@@ -1245,7 +1246,10 @@ ${selectedBrandKit.logoUrl ? `- Logo URL: ${selectedBrandKit.logoUrl}` : ''}
 ` : '';
             
             const pageList = sitePages.map(p => `- ${p.name} (/${p.slug})`).join('\n');
-            
+
+            // Fetch Unsplash images for the site
+            const { promptBlock: siteUnsplashBlock } = await fetchImagesForPrompt(trimmedInput).catch(() => ({ promptBlock: '' }));
+
             // Generate each page
             for (const page of sitePages) {
                 const pagePrompt = `
@@ -1267,11 +1271,13 @@ ${pageList}
 4. Self-contained HTML with embedded CSS
 5. Consistent styling across all pages
 
-**IMAGES:** Use \`https://image.pollinations.ai/prompt/{description}?width={w}&height={h}&nologo=true\`
+**IMAGES:** ${siteUnsplashBlock ? 'Use the Unsplash image URLs provided below.' : `Use \`https://image.pollinations.ai/prompt/{description}?width={w}&height={h}&nologo=true\``}
+
+${siteUnsplashBlock || ''}
 
 Return ONLY RAW HTML.
                 `.trim();
-                
+
                 const responseStream = await ai.models.generateContentStream({
                     model: selectedModel,
                     contents: [{ parts: [{ text: pagePrompt }], role: "user" }]
@@ -1418,6 +1424,9 @@ Return ONLY a raw JSON array of ${variantCount} strings describing the specific 
             };
         }));
 
+        // Phase 1.5: Fetch Unsplash images (non-blocking - falls back gracefully)
+        const { promptBlock: unsplashBlock } = await fetchImagesForPrompt(trimmedInput).catch(() => ({ promptBlock: '' }));
+
         // Phase 2: Generate High-Fidelity HTML - UPDATED for Flexibility
         const generateArtifact = async (artifact: Artifact, styleInstruction: string) => {
             try {
@@ -1449,7 +1458,9 @@ You are a World-Class Frontend Engineer specializing in pixel-perfect recreation
 6. **Content:** Replace text/images with content relevant to "${trimmedInput}".
 ${brandKitInstruction}
 
-**IMAGES:** Use \`https://image.pollinations.ai/prompt/{description}?width={w}&height={h}&nologo=true\` for images.
+**IMAGES:** ${unsplashBlock ? 'Use the Unsplash image URLs provided below.' : `Use \`https://image.pollinations.ai/prompt/{description}?width={w}&height={h}&nologo=true\` for images.`}
+
+${unsplashBlock || ''}
 
 **OUTPUT:** Return ONLY the complete, self-contained HTML with embedded CSS. Mobile responsive.
                 `.trim();
@@ -1472,10 +1483,12 @@ ${brandKitInstruction}
     - If it's a Dashboard, use a Sidebar, Header, and Data Cards.
     - If it's a Blog, use a Grid of Articles.
     - If it's a Restaurant, use a Menu section and Gallery.
-3.  **Visuals:** 
+3.  **Visuals:**
     - Use CSS for creative backgrounds/shapes matching the style (e.g. brutalist borders, soft gradients, retro patterns).
-    - **IMAGES:** Use \`https://image.pollinations.ai/prompt/{description}?width={w}&height={h}&nologo=true\` for realistic photos/illustrations. 
+    - **IMAGES:** ${unsplashBlock ? 'Use the Unsplash image URLs provided below.' : `Use \`https://image.pollinations.ai/prompt/{description}?width={w}&height={h}&nologo=true\` for realistic photos/illustrations.`}
 4.  **Color:** ${selectedBrandKit ? `Use the brand kit colors: primary (${selectedBrandKit.primaryColor}), secondary (${selectedBrandKit.secondaryColor}), and accent (${selectedBrandKit.accentColor}).` : `Strictly follow the '${styleInstruction}' vibe.`}
+
+${unsplashBlock || ''}
 
 **TECHNICAL:**
 - Mobile Responsive.
