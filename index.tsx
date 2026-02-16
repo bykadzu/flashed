@@ -74,7 +74,7 @@ async function withRetry<T>(
     for (let i = 0; i <= maxRetries; i++) {
         try {
             return await fn();
-        } catch (e: any) {
+        } catch (e: unknown) {
             lastError = e;
             if (i < maxRetries) {
                 await new Promise(r => setTimeout(r, baseDelay * Math.pow(2, i)));
@@ -157,11 +157,13 @@ function App() {
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [placeholders, setPlaceholders] = useState<string[]>(INITIAL_PLACEHOLDERS);
   
+  type DrawerData = CodeDrawerData | VariationsDrawerData | HistoryDrawerData | null;
+
   const [drawerState, setDrawerState] = useState<{
       isOpen: boolean;
       mode: 'code' | 'variations' | 'history' | null;
       title: string;
-      data: any; 
+      data: DrawerData; 
   }>({ isOpen: false, mode: null, title: '', data: null });
 
   const [componentVariations, setComponentVariations] = useState<ComponentVariation[]>([]);
@@ -603,7 +605,7 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
         if (successCount === 0) {
             showError('Failed to generate variations. Please try again.');
         }
-    } catch (e: any) {
+    } catch (e: unknown) {
         showError(e.message || 'Failed to generate variations');
     } finally {
         setIsLoading(false);
@@ -686,7 +688,7 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
                   htmlLibrary.saveItem(item);
               });
               showSuccess(`Saved ${pages.length} site pages to library!`);
-          } catch (e: any) {
+          } catch (e: unknown) {
               showError(e.message || 'Failed to save site to library');
           }
           return;
@@ -704,7 +706,7 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
           );
           htmlLibrary.saveItem(item);
           showSuccess('Saved to library!');
-      } catch (e: any) {
+      } catch (e: unknown) {
           showError(e.message || 'Failed to save to library');
       }
   };
@@ -729,7 +731,7 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
               htmlLibrary.saveItem(item);
           });
           showSuccess(`Saved ${completeArtifacts.length} variants to library!`);
-      } catch (e: any) {
+      } catch (e: unknown) {
           showError(e.message || 'Failed to save batch to library');
       }
   };
@@ -829,7 +831,7 @@ Return ONLY the complete, updated HTML. No explanations or markdown code blocks.
               } : sess
           ));
           
-      } catch (e: any) {
+      } catch (e: unknown) {
           showError(e.message || 'Failed to refine design. Please try again.');
           // Restore original state on error
           setSessions(prev => prev.map((sess, i) => 
@@ -1133,7 +1135,7 @@ Return ONLY RAW HTML.
               } : s
           ));
           
-      } catch (e: any) {
+      } catch (e: unknown) {
           showError(e.message || 'Failed to add page. Please try again.');
           setSessions(prev => prev.map(s => 
               s.id === sessionId && s.site ? {
@@ -1327,7 +1329,7 @@ Return ONLY RAW HTML.
                 ));
             }
             
-        } catch (e: any) {
+        } catch (e: unknown) {
             showError(e.message || 'Failed to generate site. Please try again.');
         } finally {
             setIsLoading(false);
@@ -1548,7 +1550,7 @@ Return ONLY RAW HTML.
                     } : sess
                 ));
 
-            } catch (e: any) {
+            } catch (e: unknown) {
                 showError(`Failed to generate ${artifact.styleName} variation`);
                 setSessions(prev => prev.map(sess =>
                     sess.id === sessionId ? {
@@ -1567,7 +1569,7 @@ Return ONLY RAW HTML.
             await Promise.all(batch.map((art, i) => generateArtifact(art, generatedStyles[batchStart + i])));
         }
 
-    } catch (e: any) {
+    } catch (e: unknown) {
         showError(e.message || 'Failed to generate designs. Please try again.');
     } finally {
         setIsLoading(false);
