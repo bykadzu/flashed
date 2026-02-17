@@ -472,6 +472,12 @@ function App() {
               return;
           }
 
+          if (mod && e.key === 'p') {
+              e.preventDefault();
+              if (focusedArtifactIndex !== null) setIsPublishModalOpen(true);
+              return;
+          }
+
           // Arrow keys for navigation when not in input
           if (e.key === 'ArrowLeft') { prevItem(); return; }
           if (e.key === 'ArrowRight') { nextItem(); return; }
