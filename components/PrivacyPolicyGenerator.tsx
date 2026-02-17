@@ -45,7 +45,7 @@ export default function PrivacyPolicyGenerator({ isOpen, onClose, onGenerate }: 
     const [details, setDetails] = useState<BusinessDetails>(DEFAULT_DETAILS);
     const [isGenerating, setIsGenerating] = useState(false);
 
-    const updateField = (field: keyof BusinessDetails, value: any) => {
+    const updateField = (field: keyof BusinessDetails, value: string | boolean) => {
         setDetails(prev => ({ ...prev, [field]: value }));
     };
 
