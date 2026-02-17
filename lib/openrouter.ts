@@ -128,8 +128,15 @@ interface GenerateOptions {
   };
 }
 
+// Type for OpenRouter message content (union of string or array of content parts)
+type OpenRouterContent = string | Array<{
+  type: 'text' | 'image_url';
+  text?: string;
+  image_url?: { url: string };
+}>;
+
 // Convert Google GenAI format to OpenRouter/OpenAI format
-function convertToOpenRouterFormat(contents: Message | Message[]): Array<{ role: string; content: any }> {
+function convertToOpenRouterFormat(contents: Message | Message[]): Array<{ role: string; content: OpenRouterContent }> {
   const messageArray = Array.isArray(contents) ? contents : [contents];
 
   return messageArray.map(msg => {
@@ -140,14 +147,14 @@ function convertToOpenRouterFormat(contents: Message | Message[]): Array<{ role:
 
     // Convert parts to OpenRouter format
     if (msg.parts) {
-      const contentParts: any[] = [];
+      const contentParts: OpenRouterContent = [];
 
       for (const part of msg.parts) {
         if (part.text) {
-          contentParts.push({ type: 'text', text: part.text });
+          (contentParts as Array<{ type: string; text: string }>).push({ type: 'text', text: part.text });
         }
         if (part.inlineData) {
-          contentParts.push({
+          (contentParts as Array<{ type: string; image_url: { url: string } }>).push({
             type: 'image_url',
             image_url: {
               url: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`
@@ -157,8 +164,8 @@ function convertToOpenRouterFormat(contents: Message | Message[]): Array<{ role:
       }
 
       // If only text, simplify to string
-      if (contentParts.length === 1 && contentParts[0].type === 'text') {
-        return { role: msg.role, content: contentParts[0].text };
+      if (contentParts.length === 1 && typeof contentParts[0] === 'object' && 'text' in (contentParts[0] as object)) {
+        return { role: msg.role, content: (contentParts[0] as { text: string }).text };
       }
 
       return { role: msg.role, content: contentParts };
