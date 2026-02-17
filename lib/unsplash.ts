@@ -26,6 +26,30 @@ export interface UnsplashSearchResult {
     total: number;
 }
 
+// Unsplash API response types (raw)
+interface UnsplashApiPhoto {
+    id: string;
+    urls: {
+        raw: string;
+        full: string;
+        regular: string;
+        small: string;
+        thumb: string;
+    };
+    alt_description: string | null;
+    user: {
+        name: string;
+        links: {
+            html: string;
+        };
+    };
+    links: {
+        html: string;
+    };
+    width: number;
+    height: number;
+}
+
 // ============ Configuration ============
 
 const UNSPLASH_API_BASE = 'https://api.unsplash.com';
@@ -86,7 +110,7 @@ export async function searchPhotos(
 
     const data = await response.json();
 
-    const photos: UnsplashPhoto[] = (data.results || []).map((photo: any) => ({
+    const photos: UnsplashPhoto[] = (data.results || []).map((photo: UnsplashApiPhoto) => ({
         id: photo.id,
         url: photo.urls?.regular || photo.urls?.small || '',
         thumbUrl: photo.urls?.thumb || '',

@@ -262,9 +262,10 @@ export const publishPage = async (
         const url = `${baseUrl}/p/${shortId}`;
         
         return { url, shortId };
-    } catch (error: any) {
-        console.error('Publish error:', error);
-        return { error: error.message || 'Failed to publish page' };
+    } catch (error: unknown) {
+        const message = error instanceof Error ? error.message : 'Failed to publish page';
+        console.error('Publish error:', message);
+        return { error };
     }
 };
 
