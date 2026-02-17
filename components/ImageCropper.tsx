@@ -34,17 +34,26 @@ const ImageCropper = ({ imageSrc, onCancel, onComplete }: ImageCropperProps) => 
     const [zoom, setZoom] = useState(1);
     const [aspect, setAspect] = useState<number | undefined>(undefined); // undefined = freeform
     const [croppedAreaPixels, setCroppedAreaPixels] = useState<CroppedAreaPixels | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [error, setError] = useState<string | null>(null);
 
     const onCropComplete = useCallback((croppedArea: Area, croppedAreaPixels: CroppedAreaPixels) => {
         setCroppedAreaPixels(croppedAreaPixels);
     }, []);
 
     const handleSave = async () => {
+        if (!croppedAreaPixels) return;
+        
+        setIsSaving(true);
+        setError(null);
         try {
             const croppedImage = await getCroppedImg(imageSrc, croppedAreaPixels);
             onComplete(croppedImage);
         } catch (e) {
-            console.error(e);
+            console.error('Error cropping image:', e);
+            setError('Failed to crop image. Please try again.');
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -101,13 +110,18 @@ const ImageCropper = ({ imageSrc, onCancel, onComplete }: ImageCropperProps) => 
                     </div>
 
                     <div className="cropper-actions">
-                        <button className="cropper-btn cancel" onClick={onCancel}>
+                        <button className="cropper-btn cancel" onClick={onCancel} disabled={isSaving}>
                             <XIcon /> Cancel
                         </button>
-                        <button className="cropper-btn save" onClick={handleSave}>
-                            <CheckIcon /> Apply
+                        <button 
+                            className="cropper-btn save" 
+                            onClick={handleSave}
+                            disabled={isSaving || !croppedAreaPixels}
+                        >
+                            {isSaving ? 'Applying...' : <><CheckIcon /> Apply</>}
                         </button>
                     </div>
+                    {error && <div className="cropper-error">{error}</div>}
                 </div>
             </div>
             
@@ -186,6 +200,15 @@ const ImageCropper = ({ imageSrc, onCancel, onComplete }: ImageCropperProps) => 
                     background: #fff; color: #000;
                 }
                 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+                .cropper-error {
+                    background: rgba(239, 68, 68, 0.2);
+                    border: 1px solid #ef4444;
+                    color: #fca5a5;
+                    padding: 8px 12px;
+                    border-radius: 6px;
+                    font-size: 0.85rem;
+                    text-align: center;
+                }
             `}</style>
         </div>
     );
