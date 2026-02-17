@@ -5,9 +5,23 @@
 */
 
 import React, { useState, useCallback } from 'react';
-import Cropper from 'react-easy-crop';
+import Cropper, { Area, Point } from 'react-easy-crop';
 import { getCroppedImg } from '../utils';
 import { XIcon, CheckIcon } from './Icons';
+
+// Type for crop points
+interface CropperState {
+    x: number;
+    y: number;
+}
+
+// Type for cropped area in pixels
+interface CroppedAreaPixels {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+}
 
 interface ImageCropperProps {
     imageSrc: string;
@@ -16,12 +30,12 @@ interface ImageCropperProps {
 }
 
 const ImageCropper = ({ imageSrc, onCancel, onComplete }: ImageCropperProps) => {
-    const [crop, setCrop] = useState({ x: 0, y: 0 });
+    const [crop, setCrop] = useState<CropperState>({ x: 0, y: 0 });
     const [zoom, setZoom] = useState(1);
     const [aspect, setAspect] = useState<number | undefined>(undefined); // undefined = freeform
-    const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+    const [croppedAreaPixels, setCroppedAreaPixels] = useState<CroppedAreaPixels | null>(null);
 
-    const onCropComplete = useCallback((croppedArea: any, croppedAreaPixels: any) => {
+    const onCropComplete = useCallback((croppedArea: Area, croppedAreaPixels: CroppedAreaPixels) => {
         setCroppedAreaPixels(croppedAreaPixels);
     }, []);
 
