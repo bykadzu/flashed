@@ -282,6 +282,26 @@ export const TEMPLATES: Template[] = [
         suggestedStyle: 'Premium Swiss real estate',
         previewColor: '#6d4c41',
         isSwiss: true
+    },
+    {
+        id: 'notar-swiss',
+        name: 'Notary Public',
+        industry: 'Legal',
+        description: 'Swiss notary services',
+        prompt: 'Swiss notary public landing page with legal services, property authentication, inheritance planning, appointment booking, and professional credentials in German/Swiss German',
+        suggestedStyle: 'Professional Swiss legal',
+        previewColor: '#37474f',
+        isSwiss: true
+    },
+    {
+        id: 'treuhand-swiss',
+        name: 'Trust & Accounting',
+        industry: 'Finance',
+        description: 'Swiss fiduciary and accounting',
+        prompt: 'Swiss fiduciary (Treuhand) landing page with accounting services, tax advisory, company formation, audit services, and client portal in German/Swiss German',
+        suggestedStyle: 'Trusted Swiss finance',
+        previewColor: '#1565c0',
+        isSwiss: true
     }
 ];
 
