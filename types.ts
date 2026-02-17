@@ -133,6 +133,89 @@ export interface HTMLItem {
 
 export type LibrarySortOption = 'newest' | 'oldest' | 'name' | 'size';
 
+// ============ Phase 2: Version History ============
+export interface VersionEntry {
+    id: string;
+    artifactId: string;
+    html: string;
+    timestamp: number;
+    label?: string; // e.g. "Initial generation", "Refinement: make it darker"
+}
+
+// ============ Phase 2: Keyboard Shortcuts ============
+export interface KeyboardShortcut {
+    key: string;
+    modifiers: ('ctrl' | 'meta' | 'shift' | 'alt')[];
+    action: string;
+    description: string;
+    category: 'navigation' | 'actions' | 'generation' | 'editing';
+}
+
+// ============ Phase 2: SEO Analysis ============
+export interface SEOIssue {
+    type: 'error' | 'warning' | 'info';
+    category: string;
+    message: string;
+    fix?: string;
+}
+
+export interface SEOAnalysis {
+    score: number; // 0-100
+    issues: SEOIssue[];
+    meta: {
+        title?: string;
+        description?: string;
+        hasViewport: boolean;
+        hasCharset: boolean;
+        hasOgTags: boolean;
+        hasCanonical: boolean;
+        headingStructure: string[];
+        imageCount: number;
+        imagesWithAlt: number;
+        linkCount: number;
+    };
+}
+
+// ============ Phase 2: Component Extraction ============
+export interface ExtractedComponent {
+    id: string;
+    name: string;
+    html: string;
+    css: string;
+    type: 'header' | 'hero' | 'features' | 'pricing' | 'testimonials' | 'footer' | 'cta' | 'nav' | 'form' | 'gallery' | 'other';
+    description: string;
+}
+
+// ============ Phase 2: A/B Testing ============
+export interface ABVariant {
+    id: string;
+    name: string;
+    html: string;
+    description: string;
+}
+
+export interface ABTest {
+    id: string;
+    originalArtifactId: string;
+    variants: ABVariant[];
+    createdAt: number;
+    prompt: string;
+}
+
+// ============ Phase 2: Export Formats ============
+export type ExportFormat = 'html' | 'react' | 'vue';
+
+// ============ Phase 2: Draft Auto-Save ============
+export interface Draft {
+    id: string;
+    prompt: string;
+    imageData?: string;
+    brandKitId?: string;
+    siteMode: boolean;
+    pageStructure?: string;
+    timestamp: number;
+}
+
 // ============ Database Types ============
 export interface PublishedPage {
     id: string;

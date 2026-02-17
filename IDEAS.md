@@ -3,15 +3,15 @@
 ## v2 Feature Ideas
 
 ### Export & Delivery
-- [ ] **Export to HTML/ZIP** - Download complete website packages
-- [ ] **Export to React/Vue components** - Framework-specific output
+- [x] **Export to HTML/ZIP** - Download complete website packages
+- [x] **Export to React/Vue components** - Framework-specific output
 - [ ] **Custom domain connection** - Premium feature for clients
 - [ ] **Netlify/Vercel direct deploy** - One-click to hosting platforms
 
 ### Collaboration
 - [ ] **Team workspaces** - Multiple users per project
 - [ ] **Comments & annotations** - Feedback on specific designs
-- [ ] **Version history** - Full revision tracking with restore
+- [x] **Version history** - Full revision tracking with restore
 - [ ] **Client preview links** - Share for approval without login
 
 ### Monetization
@@ -21,10 +21,10 @@
 - [ ] **Credits system** - Pay-per-generation model
 
 ### AI Enhancements
-- [ ] **Multi-page sites** - Generate full websites, not just single pages
-- [ ] **Component extraction** - Break designs into reusable parts
-- [ ] **A/B variant generation** - Create test versions automatically
-- [ ] **SEO optimization pass** - Auto-add meta tags, structure
+- [x] **Multi-page sites** - Generate full websites, not just single pages
+- [x] **Component extraction** - Break designs into reusable parts
+- [x] **A/B variant generation** - Create test versions automatically
+- [x] **SEO optimization pass** - Auto-add meta tags, structure
 
 ---
 
@@ -44,8 +44,8 @@ Visual library for managing HTML files - like Instagram for websites.
 - **Library Management**: Search, sort, tags, folders/collections
 
 ### Integration Ideas
-- Generated designs from Flashed auto-save to library
-- Library becomes the "portfolio" view
+- [x] Generated designs from Flashed auto-save to library
+- [x] Library becomes the "portfolio" view
 - Drag designs from library into new projects
 - Compare before/after versions side-by-side
 
@@ -76,12 +76,12 @@ Google AI Studio offers free Gemini 3 Flash - could be leveraged for free tier w
 
 ## Technical Debt / Polish
 
-- [ ] Improve mobile responsiveness
-- [ ] Add loading skeletons
-- [ ] Better error messages
-- [ ] Keyboard shortcuts
-- [ ] Undo/redo support
-- [ ] Auto-save drafts
+- [x] Improve mobile responsiveness
+- [x] Add loading skeletons
+- [x] Better error messages
+- [x] Keyboard shortcuts
+- [x] Undo/redo support
+- [x] Auto-save drafts
 
 ---
 

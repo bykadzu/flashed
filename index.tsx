@@ -14,7 +14,7 @@ import ReactDOM from 'react-dom/client';
 import { ClerkProvider, SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react';
 import { useAuth } from './lib/useAuth';
 
-import { Artifact, Session, ComponentVariation, LayoutOption, BrandKit, Project, Site, SitePage, HTMLItem } from './types';
+import { Artifact, Session, ComponentVariation, LayoutOption, BrandKit, Project, Site, SitePage, HTMLItem, VersionEntry, ABVariant, ExtractedComponent } from './types';
 import {
     INITIAL_PLACEHOLDERS,
     FOCUS_DELAY,
@@ -70,7 +70,7 @@ async function withRetry<T>(
     maxRetries: number = 2,
     baseDelay: number = 500
 ): Promise<T> {
-    let lastError: Error | undefined;
+    let lastError: unknown;
     for (let i = 0; i <= maxRetries; i++) {
         try {
             return await fn();
@@ -115,7 +115,15 @@ import {
     HomeIcon,
     LayersIcon,
     BookmarkIcon,
-    ShieldIcon
+    ShieldIcon,
+    UndoIcon,
+    RedoIcon,
+    ScissorsIcon,
+    KeyboardIcon,
+    ABTestIcon,
+    SEOIcon,
+    ExportIcon,
+    WandIcon
 } from './components/Icons';
 import PublishModal from './components/PublishModal';
 import ShareModal from './components/ShareModal';
@@ -131,6 +139,17 @@ import HTMLLibrary from './components/HTMLLibrary';
 import Toast, { useToast } from './components/Toast';
 import * as htmlLibrary from './lib/htmlLibrary';
 import JSZip from 'jszip';
+
+// Phase 2 Imports
+import ExportModal from './components/ExportModal';
+import VersionHistory from './components/VersionHistory';
+import SEOAnalyzer from './components/SEOAnalyzer';
+import ComponentExtractor from './components/ComponentExtractor';
+import ABTestGenerator from './components/ABTestGenerator';
+import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp';
+import { ArtifactGridSkeleton } from './components/LoadingSkeleton';
+import { useUndoRedo } from './lib/useUndoRedo';
+import { useDraftAutoSave } from './lib/useDraftAutoSave';
 
 function App() {
   // Get current user (safe hook that works with or without Clerk)
@@ -157,13 +176,13 @@ function App() {
   const [placeholderIndex, setPlaceholderIndex] = useState(0);
   const [placeholders, setPlaceholders] = useState<string[]>(INITIAL_PLACEHOLDERS);
   
-  type DrawerData = CodeDrawerData | VariationsDrawerData | HistoryDrawerData | null;
+  type DrawerData = string | null;
 
   const [drawerState, setDrawerState] = useState<{
       isOpen: boolean;
       mode: 'code' | 'variations' | 'history' | null;
       title: string;
-      data: DrawerData; 
+      data: DrawerData;
   }>({ isOpen: false, mode: null, title: '', data: null });
 
   const [componentVariations, setComponentVariations] = useState<ComponentVariation[]>([]);
@@ -219,6 +238,22 @@ function App() {
     setStoredModel(modelId);
   };
 
+  // Phase 2: New Feature States
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isVersionHistoryOpen, setIsVersionHistoryOpen] = useState(false);
+  const [isSEOAnalyzerOpen, setIsSEOAnalyzerOpen] = useState(false);
+  const [isComponentExtractorOpen, setIsComponentExtractorOpen] = useState(false);
+  const [isABTestOpen, setIsABTestOpen] = useState(false);
+  const [isKeyboardShortcutsOpen, setIsKeyboardShortcutsOpen] = useState(false);
+  const [versionHistory, setVersionHistory] = useState<VersionEntry[]>([]);
+  const [abVariants, setAbVariants] = useState<ABVariant[]>([]);
+  const [isABGenerating, setIsABGenerating] = useState(false);
+  const [showDraftBanner, setShowDraftBanner] = useState(false);
+
+  // Phase 2: Hooks
+  const undoRedo = useUndoRedo(50);
+  const draftAutoSave = useDraftAutoSave();
+
   // Image Replacement State
   const [pendingImageReplacement, setPendingImageReplacement] = useState<{artifactId: string, imgId: string} | null>(null);
   const replaceInputRef = useRef<HTMLInputElement>(null);
@@ -257,8 +292,22 @@ function App() {
                   setProjects(parsed);
               }
           }
+
+          // Load version history
+          const savedVersions = localStorage.getItem('flashed_version_history');
+          if (savedVersions) {
+              const parsed = JSON.parse(savedVersions);
+              if (Array.isArray(parsed)) {
+                  setVersionHistory(parsed);
+              }
+          }
       } catch (e) {
           console.warn("Failed to load sessions", e);
+      }
+
+      // Check for draft recovery
+      if (draftAutoSave.hasDraft) {
+          setShowDraftBanner(true);
       }
   }, []);
 
@@ -292,6 +341,157 @@ function App() {
           console.warn("Failed to save projects", e);
       }
   }, [projects]);
+
+  // Save version history to LocalStorage
+  useEffect(() => {
+      if (versionHistory.length > 0) {
+          try {
+              // Keep last 100 versions to avoid quota issues
+              const toSave = versionHistory.slice(-100);
+              localStorage.setItem('flashed_version_history', JSON.stringify(toSave));
+          } catch (e) {
+              console.warn("Failed to save version history", e);
+          }
+      }
+  }, [versionHistory]);
+
+  // Auto-save draft periodically
+  useEffect(() => {
+      if (!inputValue && !selectedImage) return;
+      const timer = setTimeout(() => {
+          draftAutoSave.saveDraft({
+              prompt: inputValue,
+              imageData: selectedImage || undefined,
+              brandKitId: selectedBrandKit?.id,
+              siteMode,
+              pageStructure: pageStructure || undefined
+          });
+      }, 30000); // Save every 30 seconds
+      return () => clearTimeout(timer);
+  }, [inputValue, selectedImage, selectedBrandKit, siteMode, pageStructure]);
+
+  // Track version history when artifacts complete
+  useEffect(() => {
+      const session = sessions[currentSessionIndex];
+      if (!session || focusedArtifactIndex === null) return;
+      const artifact = session.artifacts[focusedArtifactIndex];
+      if (!artifact || artifact.status !== 'complete' || !artifact.html) return;
+
+      // Check if we already have this version
+      const lastVersion = versionHistory.filter(v => v.artifactId === artifact.id).pop();
+      if (lastVersion && lastVersion.html === artifact.html) return;
+
+      const entry: VersionEntry = {
+          id: generateId(),
+          artifactId: artifact.id,
+          html: artifact.html,
+          timestamp: Date.now(),
+          label: versionHistory.filter(v => v.artifactId === artifact.id).length === 0
+              ? 'Initial generation'
+              : 'Refinement'
+      };
+      setVersionHistory(prev => [...prev, entry]);
+      undoRedo.pushState(artifact.html, entry.label);
+  }, [sessions, currentSessionIndex, focusedArtifactIndex]);
+
+  // Global keyboard shortcuts
+  useEffect(() => {
+      const handleGlobalKeyDown = (e: KeyboardEvent) => {
+          const mod = e.metaKey || e.ctrlKey;
+          const target = e.target as HTMLElement;
+          const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
+
+          // Shortcuts that work everywhere
+          if (e.key === '?' && mod) {
+              e.preventDefault();
+              setIsKeyboardShortcutsOpen(prev => !prev);
+              return;
+          }
+
+          if (e.key === 'Escape') {
+              if (isExportModalOpen) setIsExportModalOpen(false);
+              else if (isVersionHistoryOpen) setIsVersionHistoryOpen(false);
+              else if (isSEOAnalyzerOpen) setIsSEOAnalyzerOpen(false);
+              else if (isComponentExtractorOpen) setIsComponentExtractorOpen(false);
+              else if (isABTestOpen) setIsABTestOpen(false);
+              else if (isKeyboardShortcutsOpen) setIsKeyboardShortcutsOpen(false);
+              else if (focusedArtifactIndex !== null) setFocusedArtifactIndex(null);
+              return;
+          }
+
+          // Shortcuts that only work when not typing in an input
+          if (isInput) return;
+
+          if (mod && e.key === 'z' && !e.shiftKey && undoRedo.canUndo) {
+              e.preventDefault();
+              const prev = undoRedo.undo();
+              if (prev && focusedArtifactIndex !== null) {
+                  setSessions(s => s.map((sess, i) =>
+                      i === currentSessionIndex ? {
+                          ...sess,
+                          artifacts: sess.artifacts.map((art, j) =>
+                              j === focusedArtifactIndex ? { ...art, html: prev.html } : art
+                          )
+                      } : sess
+                  ));
+              }
+              return;
+          }
+
+          if (mod && e.key === 'z' && e.shiftKey && undoRedo.canRedo) {
+              e.preventDefault();
+              const next = undoRedo.redo();
+              if (next && focusedArtifactIndex !== null) {
+                  setSessions(s => s.map((sess, i) =>
+                      i === currentSessionIndex ? {
+                          ...sess,
+                          artifacts: sess.artifacts.map((art, j) =>
+                              j === focusedArtifactIndex ? { ...art, html: next.html } : art
+                          )
+                      } : sess
+                  ));
+              }
+              return;
+          }
+
+          if (mod && e.key === 'e') {
+              e.preventDefault();
+              if (focusedArtifactIndex !== null) setIsExportModalOpen(true);
+              return;
+          }
+
+          if (mod && e.key === 's') {
+              e.preventDefault();
+              handleSaveToLibrary();
+              return;
+          }
+
+          if (mod && e.key === 'd') {
+              e.preventDefault();
+              handleDownload();
+              return;
+          }
+
+          // Arrow keys for navigation when not in input
+          if (e.key === 'ArrowLeft') { prevItem(); return; }
+          if (e.key === 'ArrowRight') { nextItem(); return; }
+
+          // Number keys for quick variant selection
+          const activeSession = sessions[currentSessionIndex];
+          if (/^[1-9]$/.test(e.key) && activeSession) {
+              const idx = parseInt(e.key) - 1;
+              if (idx < activeSession.artifacts.length) {
+                  setFocusedArtifactIndex(idx);
+              }
+              return;
+          }
+      };
+
+      document.addEventListener('keydown', handleGlobalKeyDown);
+      return () => document.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [focusedArtifactIndex, currentSessionIndex, undoRedo.canUndo, undoRedo.canRedo,
+      isExportModalOpen, isVersionHistoryOpen, isSEOAnalyzerOpen, isComponentExtractorOpen,
+      isABTestOpen, isKeyboardShortcutsOpen, sessions]);
 
   // Handle Image Click and Site Navigation Messages from Iframe
   useEffect(() => {
@@ -606,7 +806,7 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
             showError('Failed to generate variations. Please try again.');
         }
     } catch (e: unknown) {
-        showError(e.message || 'Failed to generate variations');
+        showError((e instanceof Error ? e.message : String(e)) || 'Failed to generate variations');
     } finally {
         setIsLoading(false);
     }
@@ -689,7 +889,7 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
               });
               showSuccess(`Saved ${pages.length} site pages to library!`);
           } catch (e: unknown) {
-              showError(e.message || 'Failed to save site to library');
+              showError((e instanceof Error ? e.message : String(e)) || 'Failed to save site to library');
           }
           return;
       }
@@ -707,7 +907,7 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
           htmlLibrary.saveItem(item);
           showSuccess('Saved to library!');
       } catch (e: unknown) {
-          showError(e.message || 'Failed to save to library');
+          showError((e instanceof Error ? e.message : String(e)) || 'Failed to save to library');
       }
   };
 
@@ -732,9 +932,155 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
           });
           showSuccess(`Saved ${completeArtifacts.length} variants to library!`);
       } catch (e: unknown) {
-          showError(e.message || 'Failed to save batch to library');
+          showError((e instanceof Error ? e.message : String(e)) || 'Failed to save batch to library');
       }
   };
+
+  // Phase 2: Version History Restore
+  const handleVersionRestore = (version: VersionEntry) => {
+      if (focusedArtifactIndex === null) return;
+      setSessions(prev => prev.map((sess, i) =>
+          i === currentSessionIndex ? {
+              ...sess,
+              artifacts: sess.artifacts.map((art, j) =>
+                  j === focusedArtifactIndex ? { ...art, html: version.html, status: 'complete' } : art
+              )
+          } : sess
+      ));
+      undoRedo.pushState(version.html, `Restored: ${version.label || 'previous version'}`);
+      setIsVersionHistoryOpen(false);
+      showSuccess('Version restored!');
+  };
+
+  // Phase 2: SEO Auto-Fix
+  const handleSEOAutoFix = (fixedHtml: string) => {
+      if (focusedArtifactIndex === null) return;
+      setSessions(prev => prev.map((sess, i) =>
+          i === currentSessionIndex ? {
+              ...sess,
+              artifacts: sess.artifacts.map((art, j) =>
+                  j === focusedArtifactIndex ? { ...art, html: fixedHtml } : art
+              )
+          } : sess
+      ));
+      undoRedo.pushState(fixedHtml, 'SEO auto-fix applied');
+      showSuccess('SEO fixes applied!');
+  };
+
+  // Phase 2: Component Extraction Save
+  const handleSaveExtractedComponent = (component: ExtractedComponent) => {
+      const html = `<!DOCTYPE html><html><head><style>${component.css}</style></head><body>${component.html}</body></html>`;
+      const item = htmlLibrary.createLibraryItem(html, `Extracted: ${component.name}`, component.name, ['component', component.type]);
+      htmlLibrary.saveItem(item);
+      showSuccess(`Component "${component.name}" saved to library!`);
+  };
+
+  // Phase 2: A/B Test Generate
+  const handleABGenerate = useCallback(async (category: string, description: string) => {
+      const session = sessions[currentSessionIndex];
+      if (!session || focusedArtifactIndex === null) return;
+      const artifact = session.artifacts[focusedArtifactIndex];
+      if (!artifact?.html) return;
+
+      setIsABGenerating(true);
+      try {
+          const apiKey = getApiKey();
+          const ai = createOpenRouterClient(apiKey);
+
+          const prompt = `
+You are a World-Class Frontend Engineer specializing in A/B testing.
+Create an A/B test variant of this design.
+
+**ORIGINAL DESIGN:**
+\`\`\`html
+${artifact.html.substring(0, 6000)}
+\`\`\`
+
+**A/B TEST CATEGORY:** ${category}
+**VARIATION DESCRIPTION:** ${description}
+
+**INSTRUCTIONS:**
+- Keep the same content structure but apply the described variation
+- Make it a complete, self-contained HTML page
+- Ensure mobile responsiveness
+- The change should be meaningful enough to potentially affect conversion rates
+
+Return ONLY the complete HTML. No explanations or markdown code blocks.
+          `.trim();
+
+          const response = await ai.models.generateContent({
+              model: selectedModel,
+              contents: { role: 'user', parts: [{ text: prompt }] },
+              config: { temperature: 0.9 }
+          });
+
+          let html = cleanHtmlResponse(response.text || '');
+          if (!isValidHtml(html)) {
+              const htmlMatch = html.match(/<html[\s\S]*<\/html>/i);
+              if (htmlMatch) html = htmlMatch[0];
+          }
+
+          if (html) {
+              const variant: ABVariant = {
+                  id: generateId(),
+                  name: `${category}: ${description.substring(0, 40)}`,
+                  html,
+                  description
+              };
+              setAbVariants(prev => [...prev, variant]);
+          }
+      } catch (e: unknown) {
+          showError((e instanceof Error ? e.message : String(e)) || 'Failed to generate A/B variant');
+      } finally {
+          setIsABGenerating(false);
+      }
+  }, [sessions, currentSessionIndex, focusedArtifactIndex, selectedModel]);
+
+  // Phase 2: Apply A/B variant
+  const handleApplyABVariant = (html: string) => {
+      if (focusedArtifactIndex === null) return;
+      setSessions(prev => prev.map((sess, i) =>
+          i === currentSessionIndex ? {
+              ...sess,
+              artifacts: sess.artifacts.map((art, j) =>
+                  j === focusedArtifactIndex ? { ...art, html, status: 'complete' } : art
+              )
+          } : sess
+      ));
+      undoRedo.pushState(html, 'Applied A/B variant');
+      setIsABTestOpen(false);
+      showSuccess('A/B variant applied!');
+  };
+
+  // Phase 2: Draft Recovery
+  const handleRestoreDraft = () => {
+      const draft = draftAutoSave.loadDraft();
+      if (draft) {
+          setInputValue(draft.prompt);
+          if (draft.siteMode) setSiteMode(true);
+          if (draft.pageStructure) setPageStructure(draft.pageStructure);
+          draftAutoSave.clearDraft();
+          showSuccess('Draft restored!');
+      }
+      setShowDraftBanner(false);
+  };
+
+  const handleDismissDraft = () => {
+      draftAutoSave.clearDraft();
+      setShowDraftBanner(false);
+  };
+
+  // Phase 2: Auto-save to library on generation complete
+  useEffect(() => {
+      const session = sessions[currentSessionIndex];
+      if (!session) return;
+      const allComplete = session.artifacts.every(a => a.status === 'complete' || a.status === 'error');
+      const hasComplete = session.artifacts.some(a => a.status === 'complete' && a.html);
+      if (allComplete && hasComplete && !isLoading) {
+          // Clear draft when generation completes
+          draftAutoSave.clearDraft();
+      }
+  }, [sessions, currentSessionIndex, isLoading]);
 
   const handleRefine = useCallback(async (instruction: string) => {
       const session = sessions[currentSessionIndex];
@@ -832,7 +1178,7 @@ Return ONLY the complete, updated HTML. No explanations or markdown code blocks.
           ));
           
       } catch (e: unknown) {
-          showError(e.message || 'Failed to refine design. Please try again.');
+          showError((e instanceof Error ? e.message : String(e)) || 'Failed to refine design. Please try again.');
           // Restore original state on error
           setSessions(prev => prev.map((sess, i) => 
               i === currentSessionIndex ? {
@@ -938,7 +1284,7 @@ Return ONLY the complete, updated HTML. No explanations or markdown code blocks.
           id: generateId(),
           prompt: item.prompt || `Loaded from library: ${item.title}`,
           artifacts: [newArtifact],
-          createdAt: Date.now()
+          timestamp: Date.now()
       };
 
       setSessions(prev => [...prev, newSession]);
@@ -1136,14 +1482,14 @@ Return ONLY RAW HTML.
           ));
           
       } catch (e: unknown) {
-          showError(e.message || 'Failed to add page. Please try again.');
+          showError((e instanceof Error ? e.message : String(e)) || 'Failed to add page. Please try again.');
           setSessions(prev => prev.map(s => 
               s.id === sessionId && s.site ? {
                   ...s,
                   site: {
                       ...s.site,
                       pages: s.site.pages.map(p => 
-                          p.id === pageId ? { ...p, html: `<div style="color: #ff6b6b; padding: 20px;">Error: ${e.message}</div>`, status: 'error' } : p
+                          p.id === pageId ? { ...p, html: `<div style="color: #ff6b6b; padding: 20px;">Error: ${e instanceof Error ? e.message : String(e)}</div>`, status: 'error' } : p
                       )
                   }
               } : s
@@ -1330,7 +1676,7 @@ Return ONLY RAW HTML.
             }
             
         } catch (e: unknown) {
-            showError(e.message || 'Failed to generate site. Please try again.');
+            showError((e instanceof Error ? e.message : String(e)) || 'Failed to generate site. Please try again.');
         } finally {
             setIsLoading(false);
             setPageStructure('');
@@ -1556,7 +1902,7 @@ Return ONLY RAW HTML.
                     sess.id === sessionId ? {
                         ...sess,
                         artifacts: sess.artifacts.map(art =>
-                            art.id === artifact.id ? { ...art, html: `<div style="color: #ff6b6b; padding: 20px;">Error: ${e.message}</div>`, status: 'error' } : art
+                            art.id === artifact.id ? { ...art, html: `<div style="color: #ff6b6b; padding: 20px;">Error: ${e instanceof Error ? e.message : String(e)}</div>`, status: 'error' } : art
                         )
                     } : sess
                 ));
@@ -1570,7 +1916,7 @@ Return ONLY RAW HTML.
         }
 
     } catch (e: unknown) {
-        showError(e.message || 'Failed to generate designs. Please try again.');
+        showError((e instanceof Error ? e.message : String(e)) || 'Failed to generate designs. Please try again.');
     } finally {
         setIsLoading(false);
         setTimeout(() => inputRef.current?.focus(), FOCUS_DELAY);
@@ -1602,7 +1948,7 @@ Return ONLY RAW HTML.
           id: generateId(),
           prompt: `Privacy Policy for ${businessName}`,
           artifacts: [newArtifact],
-          createdAt: Date.now()
+          timestamp: Date.now()
       };
 
       setSessions(prev => [...prev, newSession]);
@@ -1758,6 +2104,71 @@ Return ONLY RAW HTML.
             onClose={() => setIsSettingsOpen(false)}
             selectedModel={selectedModel}
             onModelChange={handleModelChange}
+        />
+
+        {/* Phase 2: Export Modal */}
+        {focusedArtifactIndex !== null && currentSession && currentSession.artifacts[focusedArtifactIndex] && (
+            <ExportModal
+                isOpen={isExportModalOpen}
+                onClose={() => setIsExportModalOpen(false)}
+                html={currentSession.artifacts[focusedArtifactIndex].html}
+                title={currentSession.artifacts[focusedArtifactIndex].styleName}
+            />
+        )}
+
+        {/* Phase 2: Version History */}
+        <VersionHistory
+            isOpen={isVersionHistoryOpen}
+            onClose={() => setIsVersionHistoryOpen(false)}
+            versions={focusedArtifactIndex !== null && currentSession
+                ? versionHistory.filter(v => v.artifactId === currentSession.artifacts[focusedArtifactIndex]?.id)
+                : []
+            }
+            currentHtml={focusedArtifactIndex !== null && currentSession
+                ? currentSession.artifacts[focusedArtifactIndex]?.html || ''
+                : ''
+            }
+            onRestore={handleVersionRestore}
+        />
+
+        {/* Phase 2: SEO Analyzer */}
+        {focusedArtifactIndex !== null && currentSession && currentSession.artifacts[focusedArtifactIndex] && (
+            <SEOAnalyzer
+                isOpen={isSEOAnalyzerOpen}
+                onClose={() => setIsSEOAnalyzerOpen(false)}
+                html={currentSession.artifacts[focusedArtifactIndex].html}
+                onAutoFix={handleSEOAutoFix}
+            />
+        )}
+
+        {/* Phase 2: Component Extractor */}
+        {focusedArtifactIndex !== null && currentSession && currentSession.artifacts[focusedArtifactIndex] && (
+            <ComponentExtractor
+                isOpen={isComponentExtractorOpen}
+                onClose={() => setIsComponentExtractorOpen(false)}
+                html={currentSession.artifacts[focusedArtifactIndex].html}
+                onSaveComponent={handleSaveExtractedComponent}
+            />
+        )}
+
+        {/* Phase 2: A/B Test Generator */}
+        {focusedArtifactIndex !== null && currentSession && currentSession.artifacts[focusedArtifactIndex] && (
+            <ABTestGenerator
+                isOpen={isABTestOpen}
+                onClose={() => { setIsABTestOpen(false); setAbVariants([]); }}
+                originalHtml={currentSession.artifacts[focusedArtifactIndex].html}
+                prompt={currentSession.prompt}
+                onGenerate={handleABGenerate}
+                onApplyVariant={handleApplyABVariant}
+                variants={abVariants}
+                isGenerating={isABGenerating}
+            />
+        )}
+
+        {/* Phase 2: Keyboard Shortcuts Help */}
+        <KeyboardShortcutsHelp
+            isOpen={isKeyboardShortcutsOpen}
+            onClose={() => setIsKeyboardShortcutsOpen(false)}
         />
 
         <SideDrawer 
@@ -1926,11 +2337,17 @@ Return ONLY RAW HTML.
                             <button onClick={handleShowCode}>
                                 <CodeIcon /> Source
                             </button>
+                            <button onClick={() => setIsExportModalOpen(true)} title="Export (Ctrl+E)">
+                                <ExportIcon /> Export
+                            </button>
                             <button onClick={handleDownload}>
                                 <DownloadIcon /> Download
                             </button>
                             <button onClick={handleSaveToLibrary}>
                                 <BookmarkIcon /> Save
+                            </button>
+                            <button onClick={() => setIsSEOAnalyzerOpen(true)}>
+                                <SEOIcon /> SEO
                             </button>
                         </>
                     ) : (
@@ -1938,12 +2355,45 @@ Return ONLY RAW HTML.
                             <button onClick={() => setFocusedArtifactIndex(null)}>
                                 <GridIcon /> Grid
                             </button>
+                            {/* Undo/Redo */}
+                            <div className="undo-redo-bar">
+                                <button onClick={() => {
+                                    const prev = undoRedo.undo();
+                                    if (prev && focusedArtifactIndex !== null) {
+                                        setSessions(s => s.map((sess, i) =>
+                                            i === currentSessionIndex ? {
+                                                ...sess,
+                                                artifacts: sess.artifacts.map((art, j) =>
+                                                    j === focusedArtifactIndex ? { ...art, html: prev.html } : art
+                                                )
+                                            } : sess
+                                        ));
+                                    }
+                                }} disabled={!undoRedo.canUndo} title="Undo (Ctrl+Z)">
+                                    <UndoIcon />
+                                </button>
+                                <button onClick={() => {
+                                    const next = undoRedo.redo();
+                                    if (next && focusedArtifactIndex !== null) {
+                                        setSessions(s => s.map((sess, i) =>
+                                            i === currentSessionIndex ? {
+                                                ...sess,
+                                                artifacts: sess.artifacts.map((art, j) =>
+                                                    j === focusedArtifactIndex ? { ...art, html: next.html } : art
+                                                )
+                                            } : sess
+                                        ));
+                                    }
+                                }} disabled={!undoRedo.canRedo} title="Redo (Ctrl+Shift+Z)">
+                                    <RedoIcon />
+                                </button>
+                            </div>
                             <button
                                 className="upgrade-to-site-btn"
                                 onClick={() => handleUpgradeToSite(currentSessionIndex, focusedArtifactIndex!)}
                                 disabled={isLoading || currentSession?.artifacts[focusedArtifactIndex!]?.status !== 'complete'}
                             >
-                                <LayersIcon /> Upgrade to Multi-Site
+                                <LayersIcon /> Multi-Site
                             </button>
                             <button onClick={handleGenerateVariations} disabled={isLoading}>
                                 <SparklesIcon /> Variations
@@ -1951,11 +2401,26 @@ Return ONLY RAW HTML.
                             <button onClick={handleShowCode}>
                                 <CodeIcon /> Source
                             </button>
+                            <button onClick={() => setIsExportModalOpen(true)} title="Export (Ctrl+E)">
+                                <ExportIcon /> Export
+                            </button>
                             <button onClick={handleDownload}>
                                 <DownloadIcon /> Download
                             </button>
-                            <button onClick={handleSaveToLibrary}>
+                            <button onClick={handleSaveToLibrary} title="Save (Ctrl+S)">
                                 <BookmarkIcon /> Save
+                            </button>
+                            <button onClick={() => setIsVersionHistoryOpen(true)}>
+                                <HistoryIcon /> Versions
+                            </button>
+                            <button onClick={() => setIsSEOAnalyzerOpen(true)}>
+                                <SEOIcon /> SEO
+                            </button>
+                            <button onClick={() => setIsComponentExtractorOpen(true)}>
+                                <ScissorsIcon /> Extract
+                            </button>
+                            <button onClick={() => { setAbVariants([]); setIsABTestOpen(true); }}>
+                                <ABTestIcon /> A/B Test
                             </button>
                             {currentSession && currentSession.artifacts.length > 3 && (
                                 <button onClick={handleSaveBatchToLibrary}>
@@ -2159,6 +2624,27 @@ Return ONLY RAW HTML.
                 </div>
             </div>
         </div>
+
+        {/* Phase 2: Draft Recovery Banner */}
+        {showDraftBanner && (
+            <div className="draft-recovery-banner">
+                <p>You have an unsaved draft. Restore it?</p>
+                <button className="restore" onClick={handleRestoreDraft}>Restore</button>
+                <button className="dismiss" onClick={handleDismissDraft}>Dismiss</button>
+            </div>
+        )}
+
+        {/* Phase 2: Keyboard Shortcuts Hint */}
+        {!hasStarted && (
+            <button
+                className="action-bar-phase2"
+                style={{ position: 'fixed', bottom: 16, right: 16, zIndex: 50 }}
+                onClick={() => setIsKeyboardShortcutsOpen(true)}
+                title="Keyboard Shortcuts"
+            >
+                <span className="action-btn"><KeyboardIcon /> Shortcuts</span>
+            </button>
+        )}
 
         {/* Toast Notifications */}
         <Toast toasts={toasts} onDismiss={dismissToast} />
