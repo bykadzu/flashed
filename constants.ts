@@ -47,5 +47,13 @@ export const INITIAL_PLACEHOLDERS = [
     "Cybersecurity enterprise solution homepage",
     "Minimalist portfolio for a senior product designer",
     "SaaS pricing page with glassmorphism effects",
-    "Modern health-tech app launch page"
+    "Modern health-tech app launch page",
+    "Elegant wedding planner portfolio with gallery",
+    "Premium physiotherapy practice in Zurich",
+    "Modern dental clinic with smile gallery",
+    "Boutique hair salon with online booking",
+    "Professional law firm with case results",
+    "Cozy coffee shop with loyalty program",
+    "Contemporary architecture firm portfolio",
+    "Luxury spa with package deals"
 ];
