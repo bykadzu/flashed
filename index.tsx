@@ -301,7 +301,7 @@ function App() {
                   setVersionHistory(parsed);
               }
           }
-      } catch (e) {
+      } catch (e: unknown) {
           console.warn("Failed to load sessions", e);
       }
 
@@ -318,7 +318,7 @@ function App() {
               // Limit to last 10 to avoid quota issues
               const toSave = sessions.slice(-10);
               localStorage.setItem('flash_ui_sessions', JSON.stringify(toSave));
-          } catch (e) {
+          } catch (e: unknown) {
               console.warn("Failed to save sessions (quota exceeded?)", e);
           }
       }
@@ -328,7 +328,7 @@ function App() {
   useEffect(() => {
       try {
           localStorage.setItem('flash_ui_brand_kits', JSON.stringify(brandKits));
-      } catch (e) {
+      } catch (e: unknown) {
           console.warn("Failed to save brand kits", e);
       }
   }, [brandKits]);
@@ -337,7 +337,7 @@ function App() {
   useEffect(() => {
       try {
           localStorage.setItem('flash_ui_projects', JSON.stringify(projects));
-      } catch (e) {
+      } catch (e: unknown) {
           console.warn("Failed to save projects", e);
       }
   }, [projects]);
@@ -349,7 +349,7 @@ function App() {
               // Keep last 100 versions to avoid quota issues
               const toSave = versionHistory.slice(-100);
               localStorage.setItem('flashed_version_history', JSON.stringify(toSave));
-          } catch (e) {
+          } catch (e: unknown) {
               console.warn("Failed to save version history", e);
           }
       }
@@ -674,7 +674,7 @@ function App() {
                       setPlaceholders(prev => [...prev, ...shuffled]);
                   }
               }
-          } catch (e) {
+          } catch (e: unknown) {
               console.warn("Silently failed to fetch dynamic placeholders", e);
           }
       };
@@ -715,7 +715,7 @@ function App() {
                       yield JSON.parse(jsonString);
                       buffer = buffer.substring(end + 1);
                       start = buffer.indexOf('{');
-                  } catch (e) {
+                  } catch (e: unknown) {
                       start = buffer.indexOf('{', start + 1);
                   }
               } else {
@@ -800,7 +800,7 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
                         setComponentVariations(prev => [...prev, result]);
                     }
                     return result;
-                } catch (e) {
+                } catch (e: unknown) {
                     // Individual variation failed, continue with others
                     return null;
                 }
@@ -1757,7 +1757,7 @@ Return ONLY a raw JSON array of ${variantCount} strings describing the specific 
         if (jsonMatch) {
             try {
                 generatedStyles = JSON.parse(jsonMatch[0]);
-            } catch (e) {
+            } catch (e: unknown) {
                 console.warn("Failed to parse styles, using fallbacks");
             }
         }

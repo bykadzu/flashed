@@ -49,7 +49,7 @@ const ImageCropper = ({ imageSrc, onCancel, onComplete }: ImageCropperProps) => 
         try {
             const croppedImage = await getCroppedImg(imageSrc, croppedAreaPixels);
             onComplete(croppedImage);
-        } catch (e) {
+        } catch (e: unknown) {
             console.error('Error cropping image:', e);
             setError('Failed to crop image. Please try again.');
         } finally {
