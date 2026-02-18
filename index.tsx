@@ -6,7 +6,7 @@
 
 //Vibe coded by ammaar@google.com
 
-import { createOpenRouterClient, DEFAULT_MODEL, getStoredModel, setStoredModel, ModelId } from './lib/openrouter';
+import { createOpenRouterClient, DEFAULT_MODEL, getStoredModel, setStoredModel, ModelId, ContentPart } from './lib/openrouter';
 import { getApiKey, validateEnv, ENV } from './lib/env';
 import { fetchImagesForPrompt } from './lib/unsplash';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
@@ -1735,7 +1735,7 @@ Think broad: Retro, Brutalist, Playful, Corporate, Minimalist, Industrial, Natur
 Return ONLY a raw JSON array of ${variantCount} strings describing the specific vibes.
         `.trim();
 
-        const styleRequestParts: any[] = [{ text: stylePrompt }];
+        const styleRequestParts: ContentPart[] = [{ text: stylePrompt }];
         
         // If an image is selected, add it to the request so Gemini can "see" the vibe
         if (selectedImage) {
@@ -1854,7 +1854,7 @@ Return ONLY RAW HTML.
                 
                 const prompt = isCloning ? clonePrompt : standardPrompt;
           
-                const generationParts: any[] = [{ text: prompt }];
+                const generationParts: ContentPart[] = [{ text: prompt }];
                 if (selectedImage) {
                     const { mimeType, data } = parseDataUrl(selectedImage);
                     generationParts.push({
