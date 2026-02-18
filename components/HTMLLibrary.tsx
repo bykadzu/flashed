@@ -261,7 +261,7 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem, onOpenSiteI
             if (!isHTMLFile(file.name)) continue;
             htmlFiles.push({
                 name: file.name,
-                relativePath: (file as any).webkitRelativePath || file.name,
+                relativePath: (file as File & { webkitRelativePath?: string }).webkitRelativePath || file.name,
                 file
             });
         }
@@ -474,7 +474,7 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem, onOpenSiteI
                         type="file"
                         ref={folderInputRef}
                         onChange={handleFolderUpload}
-                        {...({ webkitdirectory: '', directory: '' } as any)}
+                        {...({ webkitdirectory: '', directory: '' } as React.HTMLProps<HTMLInputElement>)}
                         style={{ display: 'none' }}
                     />
                     <div className="upload-split-btn">
