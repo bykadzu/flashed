@@ -172,6 +172,18 @@ function analyzeHTML(html: string): SEOAnalysis {
         });
     }
 
+    // Favicon check
+    const hasFavicon = !!doc.querySelector('link[rel="icon"]') ||
+        !!doc.querySelector('link[rel="shortcut icon"]') ||
+        !!doc.querySelector('link[rel="apple-touch-icon"]');
+    if (!hasFavicon) {
+        issues.push({
+            type: 'info',
+            category: 'Meta Tags',
+            message: 'Missing favicon link. Add a favicon for browser tab branding.',
+        });
+    }
+
     // --- Content ---
 
     const h1Elements = doc.querySelectorAll('h1');
@@ -362,6 +374,7 @@ function analyzeHTML(html: string): SEOAnalysis {
             hasOgTags,
             hasTwitterCard,
             hasCanonical,
+            hasFavicon,
             headingStructure,
             imageCount,
             imagesWithAlt,
@@ -721,6 +734,7 @@ export default function SEOAnalyzer({ isOpen, onClose, html, onAutoFix }: SEOAna
                             { label: 'OG Tags', ok: analysis.meta.hasOgTags },
                             { label: 'Twitter', ok: analysis.meta.hasTwitterCard },
                             { label: 'Canonical', ok: analysis.meta.hasCanonical },
+                            { label: 'Favicon', ok: analysis.meta.hasFavicon },
                         ].map((item) => (
                             <div
                                 key={item.label}
