@@ -63,6 +63,8 @@ function escapeHtml(str: string): string {
 
 function wrapInHTML(jsCode: string, title: string): string {
     const safeName = escapeHtml(title.replace(/\.[jt]sx?$/i, ''));
+    // Prevent </script> injection attacks by escaping closing script tags
+    const safeJsCode = jsCode.replace(/<\/script/gi, '<\\/script');
     return `<!DOCTYPE html>
 <html><head>
 <meta charset="UTF-8">
@@ -73,7 +75,7 @@ function wrapInHTML(jsCode: string, title: string): string {
 </head><body>
 <div id="root"></div>
 <script>
-${jsCode}
+${safeJsCode}
 ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
 <\/script>
 </body></html>`;
