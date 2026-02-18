@@ -121,6 +121,10 @@ function analyzeHTML(html: string): SEOAnalysis {
     const hasOgImage = !!doc.querySelector('meta[property="og:image"]');
     const hasOgTags = hasOgTitle && hasOgDesc;
 
+    // Twitter Card tags
+    const hasTwitterCard = !!doc.querySelector('meta[name="twitter:card"]');
+    const hasTwitterSite = !!doc.querySelector('meta[name="twitter:site"]');
+
     if (!hasOgTitle) {
         issues.push({
             type: 'info',
@@ -140,6 +144,22 @@ function analyzeHTML(html: string): SEOAnalysis {
             type: 'info',
             category: 'Meta Tags',
             message: 'Missing Open Graph image tag. Social media shares will not display a preview image.',
+        });
+    }
+
+    // Twitter Card checks
+    if (!hasTwitterCard) {
+        issues.push({
+            type: 'info',
+            category: 'Meta Tags',
+            message: 'Missing Twitter Card meta tags. Twitter shares will not display a preview card.',
+        });
+    }
+    if (!hasTwitterSite && hasTwitterCard) {
+        issues.push({
+            type: 'info',
+            category: 'Meta Tags',
+            message: 'Missing Twitter Site (@username) tag. Add twitter:site for better Twitter previews.',
         });
     }
 
@@ -340,6 +360,7 @@ function analyzeHTML(html: string): SEOAnalysis {
             hasViewport,
             hasCharset,
             hasOgTags,
+            hasTwitterCard,
             hasCanonical,
             headingStructure,
             imageCount,
@@ -475,6 +496,7 @@ export default function SEOAnalyzer({ isOpen, onClose, html, onAutoFix }: SEOAna
                     hasViewport: false,
                     hasCharset: false,
                     hasOgTags: false,
+                    hasTwitterCard: false,
                     hasCanonical: false,
                     headingStructure: [],
                     imageCount: 0,
@@ -697,6 +719,7 @@ export default function SEOAnalyzer({ isOpen, onClose, html, onAutoFix }: SEOAna
                             { label: 'Viewport', ok: analysis.meta.hasViewport },
                             { label: 'Charset', ok: analysis.meta.hasCharset },
                             { label: 'OG Tags', ok: analysis.meta.hasOgTags },
+                            { label: 'Twitter', ok: analysis.meta.hasTwitterCard },
                             { label: 'Canonical', ok: analysis.meta.hasCanonical },
                         ].map((item) => (
                             <div
