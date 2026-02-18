@@ -265,7 +265,7 @@ export const publishPage = async (
     } catch (error: unknown) {
         const message = error instanceof Error ? error.message : 'Failed to publish page';
         console.error('Publish error:', message);
-        return { error };
+        return { error: message };
     }
 };
 

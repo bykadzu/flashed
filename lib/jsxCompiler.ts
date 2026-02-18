@@ -3,6 +3,8 @@
  * Dynamically loads Babel to avoid bloating the initial bundle.
  */
 
+import type { BabelTransformOptions } from '../types/babel';
+
 let babelLoaded = false;
 
 export class JSXCompilationError extends Error {
@@ -23,14 +25,16 @@ export async function compileJSX(source: string, filename: string): Promise<stri
             babelLoaded = true;
         }
 
-        if (!(window as any).Babel) {
+        if (!window.Babel) {
             throw new JSXCompilationError('Babel not available after loading');
         }
 
-        const compiled = (window as any).Babel.transform(source, {
+        const options: BabelTransformOptions = {
             presets: ['react', 'typescript'],
-            filename
-        });
+            filename,
+        };
+
+        const compiled = window.Babel.transform(source, options);
 
         if (!compiled?.code) {
             throw new JSXCompilationError('Babel returned empty output');
@@ -48,8 +52,19 @@ export async function compileJSX(source: string, filename: string): Promise<stri
     }
 }
 
+function escapeHtml(str: string): string {
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 function wrapInHTML(jsCode: string, title: string): string {
-    const safeName = title.replace(/\.[jt]sx?$/i, '');
+    const safeName = escapeHtml(title.replace(/\.[jt]sx?$/i, ''));
+    // Prevent </script> injection attacks by escaping closing script tags
+    const safeJsCode = jsCode.replace(/<\/script/gi, '<\\/script');
     return `<!DOCTYPE html>
 <html><head>
 <meta charset="UTF-8">
@@ -60,7 +75,7 @@ function wrapInHTML(jsCode: string, title: string): string {
 </head><body>
 <div id="root"></div>
 <script>
-${jsCode}
+${safeJsCode}
 ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
 <\/script>
 </body></html>`;
@@ -68,7 +83,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(
 
 async function loadBabelStandalone(): Promise<void> {
     return new Promise<void>((resolve, reject) => {
-        if ((window as any).Babel) {
+        if (window.Babel) {
             resolve();
             return;
         }

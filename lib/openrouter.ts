@@ -140,22 +140,23 @@ function convertToOpenRouterFormat(contents: Message | Message[]): Array<{ role:
   const messageArray = Array.isArray(contents) ? contents : [contents];
 
   return messageArray.map(msg => {
+    const role: string = msg.role;
+    let content: OpenRouterContent = '';
+
     // If already has content field, might be pre-formatted
     if (msg.content && !msg.parts) {
-      return { role: msg.role, content: msg.content };
-    }
-
-    // Convert parts to OpenRouter format
-    if (msg.parts) {
-      const contentParts: OpenRouterContent = [];
+      content = msg.content as OpenRouterContent;
+    } else if (msg.parts) {
+      // Convert parts to OpenRouter format
+      const contentParts: Array<{ type: 'text' | 'image_url'; text?: string; image_url?: { url: string } }> = [];
 
       for (const part of msg.parts) {
         if (part.text) {
-          (contentParts as Array<{ type: string; text: string }>).push({ type: 'text', text: part.text });
+          contentParts.push({ type: 'text' as const, text: part.text });
         }
         if (part.inlineData) {
-          (contentParts as Array<{ type: string; image_url: { url: string } }>).push({
-            type: 'image_url',
+          contentParts.push({
+            type: 'image_url' as const,
             image_url: {
               url: `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`
             }
@@ -164,14 +165,14 @@ function convertToOpenRouterFormat(contents: Message | Message[]): Array<{ role:
       }
 
       // If only text, simplify to string
-      if (contentParts.length === 1 && typeof contentParts[0] === 'object' && 'text' in (contentParts[0] as object)) {
-        return { role: msg.role, content: (contentParts[0] as { text: string }).text };
+      if (contentParts.length === 1 && contentParts[0].type === 'text' && contentParts[0].text) {
+        content = contentParts[0].text;
+      } else {
+        content = contentParts;
       }
-
-      return { role: msg.role, content: contentParts };
     }
 
-    return { role: msg.role, content: '' };
+    return { role, content };
   });
 }
 
