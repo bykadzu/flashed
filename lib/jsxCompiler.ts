@@ -48,8 +48,17 @@ export async function compileJSX(source: string, filename: string): Promise<stri
     }
 }
 
+function escapeHtml(str: string): string {
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 function wrapInHTML(jsCode: string, title: string): string {
-    const safeName = title.replace(/\.[jt]sx?$/i, '');
+    const safeName = escapeHtml(title.replace(/\.[jt]sx?$/i, ''));
     return `<!DOCTYPE html>
 <html><head>
 <meta charset="UTF-8">
