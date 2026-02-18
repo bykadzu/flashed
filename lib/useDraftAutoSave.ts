@@ -4,6 +4,7 @@
  */
 
 import { useEffect, useCallback, useRef } from 'react';
+import { nanoid } from 'nanoid';
 
 import { Draft } from '../types';
 
@@ -21,7 +22,7 @@ export interface UseDraftAutoSaveResult {
  * Generates a simple unique identifier for draft entries.
  */
 function generateDraftId(): string {
-    return `draft_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    return `draft_${nanoid(12)}`;
 }
 
 /**
