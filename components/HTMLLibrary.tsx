@@ -79,6 +79,7 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem, onOpenSiteI
             return (
                 item.title.toLowerCase().includes(q) ||
                 (item.description?.toLowerCase().includes(q)) ||
+                (item.prompt?.toLowerCase().includes(q)) ||
                 item.tags.some(tag => tag.toLowerCase().includes(q))
             );
         });
