@@ -105,7 +105,7 @@ export function setStoredModel(modelId: ModelId): void {
   localStorage.setItem(MODEL_STORAGE_KEY, modelId);
 }
 
-interface ContentPart {
+export interface ContentPart {
   text?: string;
   inlineData?: {
     mimeType: string;
