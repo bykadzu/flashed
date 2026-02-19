@@ -47,26 +47,36 @@ export const updateItem = (id: string, updates: Partial<HTMLItem>): HTMLItem[] =
  * Extracts metadata from a raw HTML string.
  */
 export const extractMetadata = (html: string) => {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
+    // Return safe defaults if input is invalid
+    if (!html || typeof html !== 'string') {
+        return { title: 'Untitled Document', description: '', ogImage: undefined };
+    }
 
-    // Title: prefer <title>, then first <h1>, then og:title, then fallback
-    const title = 
-        doc.querySelector('title')?.textContent?.trim() ||
-        doc.querySelector('h1')?.textContent?.trim() ||
-        doc.querySelector('meta[property="og:title"]')?.getAttribute('content') ||
-        'Untitled Document';
-    
-    // Description: prefer meta description, then og:description
-    const description = 
-        doc.querySelector('meta[name="description"]')?.getAttribute('content') ||
-        doc.querySelector('meta[property="og:description"]')?.getAttribute('content') ||
-        '';
-    
-    // Optional: extract og:image for thumbnail
-    const ogImage = doc.querySelector('meta[property="og:image"]')?.getAttribute('content') || undefined;
+    try {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(html, 'text/html');
 
-    return { title, description, ogImage };
+        // Title: prefer <title>, then first <h1>, then og:title, then fallback
+        const title = 
+            doc.querySelector('title')?.textContent?.trim() ||
+            doc.querySelector('h1')?.textContent?.trim() ||
+            doc.querySelector('meta[property="og:title"]')?.getAttribute('content') ||
+            'Untitled Document';
+        
+        // Description: prefer meta description, then og:description
+        const description = 
+            doc.querySelector('meta[name="description"]')?.getAttribute('content') ||
+            doc.querySelector('meta[property="og:description"]')?.getAttribute('content') ||
+            '';
+        
+        // Optional: extract og:image for thumbnail
+        const ogImage = doc.querySelector('meta[property="og:image"]')?.getAttribute('content') || undefined;
+
+        return { title, description, ogImage };
+    } catch (e) {
+        console.error("Failed to extract metadata from HTML:", e);
+        return { title: 'Untitled Document', description: '', ogImage: undefined };
+    }
 };
 
 /**
