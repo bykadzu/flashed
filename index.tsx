@@ -2416,7 +2416,7 @@ Return ONLY RAW HTML.
                             <button onClick={handleSaveToLibrary} title="Save (Ctrl+S)" aria-label="Save to library">
                                 <BookmarkIcon /> Save
                             </button>
-                            <button onClick={() => setIsVersionHistoryOpen(true)} aria-label="Versions">
+                            <button onClick={() => setIsVersionHistoryOpen(true)} aria-label="Versions – view version history">
                                 <HistoryIcon /> Versions
                             </button>
                             <button onClick={() => setIsSEOAnalyzerOpen(true)} aria-label="Analyze SEO">
