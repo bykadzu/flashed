@@ -2255,13 +2255,13 @@ Return ONLY RAW HTML.
                          <p>Instant landing pages for customer demos</p>
                          {!hasStarted && (
                              <>
-                                 <button className="surprise-button" onClick={handleSurpriseMe} disabled={isLoading}>
+                                 <button className="surprise-button" aria-label="Get random example prompt" onClick={handleSurpriseMe} disabled={isLoading}>
                                      <SparklesIcon /> Example Pitch
                                  </button>
-                                 <button className="template-browse-btn" onClick={() => setIsTemplateLibraryOpen(true)} disabled={isLoading}>
+                                 <button className="template-browse-btn" aria-label="Browse templates" onClick={() => setIsTemplateLibraryOpen(true)} disabled={isLoading}>
                                      <TemplateIcon /> Browse Templates
                                  </button>
-                                 <button className="template-browse-btn" onClick={() => setIsPrivacyPolicyOpen(true)} disabled={isLoading}>
+                                 <button className="template-browse-btn" aria-label="View privacy policy" onClick={() => setIsPrivacyPolicyOpen(true)} disabled={isLoading}>
                                      <ShieldIcon /> Privacy Policy
                                  </button>
                              </>
@@ -2337,28 +2337,28 @@ Return ONLY RAW HTML.
                  <div className="action-buttons">
                     {currentSession?.mode === 'site' ? (
                         <>
-                            <button onClick={() => setFocusedArtifactIndex(null)}>
+                            <button onClick={() => setFocusedArtifactIndex(null)} aria-label="View grid">
                                 <GridIcon /> Grid
                             </button>
-                            <button onClick={handleShowCode}>
+                            <button onClick={handleShowCode} aria-label="Show source code">
                                 <CodeIcon /> Source
                             </button>
                             <button onClick={() => setIsExportModalOpen(true)} title="Export (Ctrl+E)">
                                 <ExportIcon /> Export
                             </button>
-                            <button onClick={handleDownload}>
+                            <button onClick={handleDownload} aria-label="Download HTML">
                                 <DownloadIcon /> Download
                             </button>
-                            <button onClick={handleSaveToLibrary}>
+                            <button onClick={handleSaveToLibrary} aria-label="Save to library">
                                 <BookmarkIcon /> Save
                             </button>
-                            <button onClick={() => setIsSEOAnalyzerOpen(true)}>
+                            <button onClick={() => setIsSEOAnalyzerOpen(true)} aria-label="Analyze SEO">
                                 <SEOIcon /> SEO
                             </button>
                         </>
                     ) : (
                         <>
-                            <button onClick={() => setFocusedArtifactIndex(null)}>
+                            <button onClick={() => setFocusedArtifactIndex(null)} aria-label="View grid">
                                 <GridIcon /> Grid
                             </button>
                             {/* Undo/Redo */}
@@ -2401,10 +2401,10 @@ Return ONLY RAW HTML.
                             >
                                 <LayersIcon /> Multi-Site
                             </button>
-                            <button onClick={handleGenerateVariations} disabled={isLoading}>
+                            <button onClick={handleGenerateVariations} disabled={isLoading} aria-label="Generate variations">
                                 <SparklesIcon /> Variations
                             </button>
-                            <button onClick={handleShowCode}>
+                            <button onClick={handleShowCode} aria-label="Show source code">
                                 <CodeIcon /> Source
                             </button>
                             <button onClick={() => setIsExportModalOpen(true)} title="Export (Ctrl+E)">
@@ -2416,20 +2416,20 @@ Return ONLY RAW HTML.
                             <button onClick={handleSaveToLibrary} title="Save (Ctrl+S)">
                                 <BookmarkIcon /> Save
                             </button>
-                            <button onClick={() => setIsVersionHistoryOpen(true)}>
+                            <button onClick={() => setIsVersionHistoryOpen(true)} aria-label="View version history">
                                 <HistoryIcon /> Versions
                             </button>
-                            <button onClick={() => setIsSEOAnalyzerOpen(true)}>
+                            <button onClick={() => setIsSEOAnalyzerOpen(true)} aria-label="Analyze SEO">
                                 <SEOIcon /> SEO
                             </button>
-                            <button onClick={() => setIsComponentExtractorOpen(true)}>
+                            <button onClick={() => setIsComponentExtractorOpen(true)} aria-label="Extract components">
                                 <ScissorsIcon /> Extract
                             </button>
-                            <button onClick={() => { setAbVariants([]); setIsABTestOpen(true); }}>
+                            <button onClick={() => { setAbVariants([]); setIsABTestOpen(true); }} aria-label="Start A/B test">
                                 <ABTestIcon /> A/B Test
                             </button>
                             {currentSession && currentSession.artifacts.length > 3 && (
-                                <button onClick={handleSaveBatchToLibrary}>
+                                <button onClick={handleSaveBatchToLibrary} aria-label="Save all artifacts">
                                     <LayersIcon /> Save All
                                 </button>
                             )}
