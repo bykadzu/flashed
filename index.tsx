@@ -2255,7 +2255,7 @@ Return ONLY RAW HTML.
                          <p>Instant landing pages for customer demos</p>
                          {!hasStarted && (
                              <>
-                                 <button className="surprise-button" onClick={handleSurpriseMe} disabled={isLoading} aria-label="Example Pitch – generate a surprise landing page">
+                                 <button className="surprise-button" onClick={handleSurpriseMe} disabled={isLoading} aria-label="Example Pitch — generate a surprise landing page">
                                      <SparklesIcon /> Example Pitch
                                  </button>
                                  <button className="template-browse-btn" onClick={() => setIsTemplateLibraryOpen(true)} disabled={isLoading} aria-label="Browse templates">
