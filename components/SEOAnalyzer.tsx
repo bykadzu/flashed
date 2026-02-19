@@ -181,6 +181,7 @@ function analyzeHTML(html: string): SEOAnalysis {
             type: 'info',
             category: 'Meta Tags',
             message: 'Missing favicon link. Add a favicon for browser tab branding.',
+            fix: 'add-favicon',
         });
     }
 
@@ -449,6 +450,18 @@ function applyAutoFixes(html: string, analysis: SEOAnalysis): string {
                     const head = doc.head || doc.createElement('head');
                     if (!doc.head) doc.documentElement.prepend(head);
                     head.appendChild(titleEl);
+                }
+                break;
+            }
+            case 'add-favicon': {
+                if (!doc.querySelector('link[rel="icon"]') && !doc.querySelector('link[rel="shortcut icon"]')) {
+                    const link = doc.createElement('link');
+                    link.setAttribute('rel', 'icon');
+                    link.setAttribute('type', 'image/svg+xml');
+                    link.setAttribute('href', 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">⚡</text></svg>');
+                    const head = doc.head || doc.createElement('head');
+                    if (!doc.head) doc.documentElement.prepend(head);
+                    head.appendChild(link);
                 }
                 break;
             }
