@@ -2255,13 +2255,13 @@ Return ONLY RAW HTML.
                          <p>Instant landing pages for customer demos</p>
                          {!hasStarted && (
                              <>
-                                 <button className="surprise-button" onClick={handleSurpriseMe} disabled={isLoading}>
+                                 <button className="surprise-button" onClick={handleSurpriseMe} disabled={isLoading} aria-label="Generate surprise landing page example">
                                      <SparklesIcon /> Example Pitch
                                  </button>
-                                 <button className="template-browse-btn" onClick={() => setIsTemplateLibraryOpen(true)} disabled={isLoading}>
+                                 <button className="template-browse-btn" onClick={() => setIsTemplateLibraryOpen(true)} disabled={isLoading} aria-label="Browse templates">
                                      <TemplateIcon /> Browse Templates
                                  </button>
-                                 <button className="template-browse-btn" onClick={() => setIsPrivacyPolicyOpen(true)} disabled={isLoading}>
+                                 <button className="template-browse-btn" onClick={() => setIsPrivacyPolicyOpen(true)} disabled={isLoading} aria-label="Open privacy policy generator">
                                      <ShieldIcon /> Privacy Policy
                                  </button>
                              </>
@@ -2337,22 +2337,22 @@ Return ONLY RAW HTML.
                  <div className="action-buttons">
                     {currentSession?.mode === 'site' ? (
                         <>
-                            <button onClick={() => setFocusedArtifactIndex(null)}>
+                            <button onClick={() => setFocusedArtifactIndex(null)} aria-label="Switch to grid view">
                                 <GridIcon /> Grid
                             </button>
-                            <button onClick={handleShowCode}>
+                            <button onClick={handleShowCode} aria-label="View source code">
                                 <CodeIcon /> Source
                             </button>
-                            <button onClick={() => setIsExportModalOpen(true)} title="Export (Ctrl+E)">
+                            <button onClick={() => setIsExportModalOpen(true)} title="Export (Ctrl+E)" aria-label="Export page">
                                 <ExportIcon /> Export
                             </button>
-                            <button onClick={handleDownload}>
+                            <button onClick={handleDownload} aria-label="Download page">
                                 <DownloadIcon /> Download
                             </button>
-                            <button onClick={handleSaveToLibrary}>
+                            <button onClick={handleSaveToLibrary} aria-label="Save to library">
                                 <BookmarkIcon /> Save
                             </button>
-                            <button onClick={() => setIsSEOAnalyzerOpen(true)}>
+                            <button onClick={() => setIsSEOAnalyzerOpen(true)} aria-label="Analyze SEO">
                                 <SEOIcon /> SEO
                             </button>
                         </>
@@ -2401,35 +2401,35 @@ Return ONLY RAW HTML.
                             >
                                 <LayersIcon /> Multi-Site
                             </button>
-                            <button onClick={handleGenerateVariations} disabled={isLoading}>
+                            <button onClick={handleGenerateVariations} disabled={isLoading} aria-label="Generate variations">
                                 <SparklesIcon /> Variations
                             </button>
-                            <button onClick={handleShowCode}>
+                            <button onClick={handleShowCode} aria-label="View source code">
                                 <CodeIcon /> Source
                             </button>
-                            <button onClick={() => setIsExportModalOpen(true)} title="Export (Ctrl+E)">
+                            <button onClick={() => setIsExportModalOpen(true)} title="Export (Ctrl+E)" aria-label="Export page">
                                 <ExportIcon /> Export
                             </button>
-                            <button onClick={handleDownload}>
+                            <button onClick={handleDownload} aria-label="Download page">
                                 <DownloadIcon /> Download
                             </button>
-                            <button onClick={handleSaveToLibrary} title="Save (Ctrl+S)">
+                            <button onClick={handleSaveToLibrary} title="Save (Ctrl+S)" aria-label="Save to library">
                                 <BookmarkIcon /> Save
                             </button>
-                            <button onClick={() => setIsVersionHistoryOpen(true)}>
+                            <button onClick={() => setIsVersionHistoryOpen(true)} aria-label="View version history">
                                 <HistoryIcon /> Versions
                             </button>
-                            <button onClick={() => setIsSEOAnalyzerOpen(true)}>
+                            <button onClick={() => setIsSEOAnalyzerOpen(true)} aria-label="Analyze SEO">
                                 <SEOIcon /> SEO
                             </button>
-                            <button onClick={() => setIsComponentExtractorOpen(true)}>
+                            <button onClick={() => setIsComponentExtractorOpen(true)} aria-label="Extract components">
                                 <ScissorsIcon /> Extract
                             </button>
-                            <button onClick={() => { setAbVariants([]); setIsABTestOpen(true); }}>
+                            <button onClick={() => { setAbVariants([]); setIsABTestOpen(true); }} aria-label="Open A/B test generator">
                                 <ABTestIcon /> A/B Test
                             </button>
                             {currentSession && currentSession.artifacts.length > 3 && (
-                                <button onClick={handleSaveBatchToLibrary}>
+                                <button onClick={handleSaveBatchToLibrary} aria-label="Save all variations to library">
                                     <LayersIcon /> Save All
                                 </button>
                             )}
