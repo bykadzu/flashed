@@ -1,6 +1,8 @@
 /**
  * Extracts metadata from a raw HTML string.
  */
+import { nanoid } from 'nanoid';
+
 export const extractMetadata = (html: string) => {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
@@ -50,4 +52,4 @@ export const prepareSafeHTML = (html: string, isTrusted: boolean) => {
 /**
  * Generates a unique ID
  */
-export const generateId = () => Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
+export const generateId = () => `${nanoid(9)}-${Date.now().toString(36)}`;
