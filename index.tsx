@@ -2255,7 +2255,7 @@ Return ONLY RAW HTML.
                          <p>Instant landing pages for customer demos</p>
                          {!hasStarted && (
                              <>
-                                 <button className="surprise-button" aria-label="Get random example prompt" onClick={handleSurpriseMe} disabled={isLoading}>
+                                 <button className="surprise-button" aria-label="Example Pitch — Get random example prompt" onClick={handleSurpriseMe} disabled={isLoading}>
                                      <SparklesIcon /> Example Pitch
                                  </button>
                                  <button className="template-browse-btn" aria-label="Browse templates" onClick={() => setIsTemplateLibraryOpen(true)} disabled={isLoading}>
@@ -2410,10 +2410,10 @@ Return ONLY RAW HTML.
                             <button onClick={() => setIsExportModalOpen(true)} title="Export (Ctrl+E)">
                                 <ExportIcon /> Export
                             </button>
-                            <button onClick={handleDownload}>
+                            <button onClick={handleDownload} aria-label="Download HTML">
                                 <DownloadIcon /> Download
                             </button>
-                            <button onClick={handleSaveToLibrary} title="Save (Ctrl+S)">
+                            <button onClick={handleSaveToLibrary} title="Save (Ctrl+S)" aria-label="Save to library">
                                 <BookmarkIcon /> Save
                             </button>
                             <button onClick={() => setIsVersionHistoryOpen(true)} aria-label="View version history">
