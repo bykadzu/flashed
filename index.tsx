@@ -2358,7 +2358,7 @@ Return ONLY RAW HTML.
                         </>
                     ) : (
                         <>
-                            <button onClick={() => setFocusedArtifactIndex(null)}>
+                            <button onClick={() => setFocusedArtifactIndex(null)} aria-label="Switch to grid view">
                                 <GridIcon /> Grid
                             </button>
                             {/* Undo/Redo */}
@@ -2375,7 +2375,7 @@ Return ONLY RAW HTML.
                                             } : sess
                                         ));
                                     }
-                                }} disabled={!undoRedo.canUndo} title="Undo (Ctrl+Z)">
+                                }} disabled={!undoRedo.canUndo} title="Undo (Ctrl+Z)" aria-label="Undo">
                                     <UndoIcon />
                                 </button>
                                 <button onClick={() => {
@@ -2390,7 +2390,7 @@ Return ONLY RAW HTML.
                                             } : sess
                                         ));
                                     }
-                                }} disabled={!undoRedo.canRedo} title="Redo (Ctrl+Shift+Z)">
+                                }} disabled={!undoRedo.canRedo} title="Redo (Ctrl+Shift+Z)" aria-label="Redo">
                                     <RedoIcon />
                                 </button>
                             </div>
@@ -2416,7 +2416,7 @@ Return ONLY RAW HTML.
                             <button onClick={handleSaveToLibrary} title="Save (Ctrl+S)" aria-label="Save to library">
                                 <BookmarkIcon /> Save
                             </button>
-                            <button onClick={() => setIsVersionHistoryOpen(true)} aria-label="View version history">
+                            <button onClick={() => setIsVersionHistoryOpen(true)} aria-label="Versions">
                                 <HistoryIcon /> Versions
                             </button>
                             <button onClick={() => setIsSEOAnalyzerOpen(true)} aria-label="Analyze SEO">
