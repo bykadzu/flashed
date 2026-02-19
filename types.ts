@@ -170,6 +170,7 @@ export interface SEOAnalysis {
         hasOgTags: boolean;
         hasTwitterCard: boolean;
         hasCanonical: boolean;
+        hasFavicon: boolean;
         headingStructure: string[];
         imageCount: number;
         imagesWithAlt: number;

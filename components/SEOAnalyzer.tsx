@@ -172,6 +172,18 @@ function analyzeHTML(html: string): SEOAnalysis {
         });
     }
 
+    // Favicon check
+    const hasFavicon = !!doc.querySelector('link[rel="icon"]') ||
+        !!doc.querySelector('link[rel="shortcut icon"]') ||
+        !!doc.querySelector('link[rel="apple-touch-icon"]');
+    if (!hasFavicon) {
+        issues.push({
+            type: 'info',
+            category: 'Meta Tags',
+            message: 'Missing favicon link. Add a favicon for browser tab branding.',
+        });
+    }
+
     // --- Content ---
 
     const h1Elements = doc.querySelectorAll('h1');
@@ -362,6 +374,7 @@ function analyzeHTML(html: string): SEOAnalysis {
             hasOgTags,
             hasTwitterCard,
             hasCanonical,
+            hasFavicon,
             headingStructure,
             imageCount,
             imagesWithAlt,
@@ -498,6 +511,7 @@ export default function SEOAnalyzer({ isOpen, onClose, html, onAutoFix }: SEOAna
                     hasOgTags: false,
                     hasTwitterCard: false,
                     hasCanonical: false,
+                    hasFavicon: false,
                     headingStructure: [],
                     imageCount: 0,
                     imagesWithAlt: 0,
@@ -709,7 +723,7 @@ export default function SEOAnalyzer({ isOpen, onClose, html, onAutoFix }: SEOAna
                     {/* Key Metrics */}
                     <div style={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(3, 1fr)',
+                        gridTemplateColumns: 'repeat(4, 1fr)',
                         gap: '8px',
                         marginBottom: '24px',
                     }}>
@@ -721,6 +735,7 @@ export default function SEOAnalyzer({ isOpen, onClose, html, onAutoFix }: SEOAna
                             { label: 'OG Tags', ok: analysis.meta.hasOgTags },
                             { label: 'Twitter', ok: analysis.meta.hasTwitterCard },
                             { label: 'Canonical', ok: analysis.meta.hasCanonical },
+                            { label: 'Favicon', ok: analysis.meta.hasFavicon },
                         ].map((item) => (
                             <div
                                 key={item.label}
