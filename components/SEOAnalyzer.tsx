@@ -511,6 +511,7 @@ export default function SEOAnalyzer({ isOpen, onClose, html, onAutoFix }: SEOAna
                     hasOgTags: false,
                     hasTwitterCard: false,
                     hasCanonical: false,
+                    hasFavicon: false,
                     headingStructure: [],
                     imageCount: 0,
                     imagesWithAlt: 0,
@@ -722,7 +723,7 @@ export default function SEOAnalyzer({ isOpen, onClose, html, onAutoFix }: SEOAna
                     {/* Key Metrics */}
                     <div style={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(3, 1fr)',
+                        gridTemplateColumns: 'repeat(4, 1fr)',
                         gap: '8px',
                         marginBottom: '24px',
                     }}>
