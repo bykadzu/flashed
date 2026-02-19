@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useState } from 'react';
 import { nanoid } from 'nanoid';
 
 import { Draft } from '../types';
@@ -56,7 +56,7 @@ function readDraftFromStorage(): Draft | null {
  * @returns An object with saveDraft, loadDraft, clearDraft, and hasDraft.
  */
 export function useDraftAutoSave(): UseDraftAutoSaveResult {
-    const hasDraftRef = useRef<boolean>(false);
+    const [hasDraft, setHasDraft] = useState<boolean>(false);
     const pendingDraftRef = useRef<Omit<Draft, 'id' | 'timestamp'> | null>(null);
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -64,7 +64,7 @@ export function useDraftAutoSave(): UseDraftAutoSaveResult {
     useEffect(() => {
         const existing = readDraftFromStorage();
         if (existing) {
-            hasDraftRef.current = true;
+            setHasDraft(true);
         }
     }, []);
 
@@ -79,7 +79,7 @@ export function useDraftAutoSave(): UseDraftAutoSaveResult {
                 timestamp: Date.now(),
             };
             localStorage.setItem(STORAGE_KEY, JSON.stringify(fullDraft));
-            hasDraftRef.current = true;
+            setHasDraft(true);
             pendingDraftRef.current = draft;
         } catch {
             // localStorage may be full or unavailable; fail silently
@@ -102,7 +102,7 @@ export function useDraftAutoSave(): UseDraftAutoSaveResult {
         } catch {
             // Ignore errors during removal
         }
-        hasDraftRef.current = false;
+        setHasDraft(false);
         pendingDraftRef.current = null;
     }, []);
 
@@ -117,7 +117,7 @@ export function useDraftAutoSave(): UseDraftAutoSaveResult {
                         timestamp: Date.now(),
                     };
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(fullDraft));
-                    hasDraftRef.current = true;
+                    setHasDraft(true);
                 } catch {
                     // localStorage may be full or unavailable; fail silently
                 }
@@ -136,6 +136,6 @@ export function useDraftAutoSave(): UseDraftAutoSaveResult {
         saveDraft,
         loadDraft,
         clearDraft,
-        hasDraft: hasDraftRef.current,
+        hasDraft,
     };
 }
