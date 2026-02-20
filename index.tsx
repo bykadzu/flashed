@@ -6,12 +6,12 @@
 
 //Vibe coded by ammaar@google.com
 
-import { createOpenRouterClient, DEFAULT_MODEL, getStoredModel, setStoredModel, ModelId, ContentPart } from './lib/openrouter';
+import { createOpenRouterClient, getStoredModel, setStoredModel, ModelId, ContentPart } from './lib/openrouter';
 import { getApiKey, validateEnv, ENV } from './lib/env';
 import { fetchImagesForPrompt } from './lib/unsplash';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
-import { ClerkProvider, SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react';
+import { ClerkProvider, SignedIn, SignedOut, SignInButton } from '@clerk/clerk-react';
 import { useAuth } from './lib/useAuth';
 
 import { Artifact, Session, ComponentVariation, LayoutOption, BrandKit, Project, Site, SitePage, HTMLItem, VersionEntry, ABVariant, ExtractedComponent } from './types';
@@ -103,16 +103,9 @@ import {
     XIcon,
     HistoryIcon,
     DownloadIcon,
-    PublishIcon,
-    GlobeIcon,
-    ShareIcon,
     PaletteIcon,
-    FolderIcon,
     CloneIcon,
     TemplateIcon,
-    ChartIcon,
-    SettingsIcon,
-    HomeIcon,
     LayersIcon,
     BookmarkIcon,
     ShieldIcon,
@@ -123,7 +116,6 @@ import {
     ABTestIcon,
     SEOIcon,
     ExportIcon,
-    WandIcon
 } from './components/Icons';
 import PublishModal from './components/PublishModal';
 import ShareModal from './components/ShareModal';
@@ -147,7 +139,7 @@ import SEOAnalyzer from './components/SEOAnalyzer';
 import ComponentExtractor from './components/ComponentExtractor';
 import ABTestGenerator from './components/ABTestGenerator';
 import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp';
-import { ArtifactGridSkeleton } from './components/LoadingSkeleton';
+
 import { useUndoRedo } from './lib/useUndoRedo';
 import { useDraftAutoSave } from './lib/useDraftAutoSave';
 

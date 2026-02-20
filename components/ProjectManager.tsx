@@ -5,7 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import type { Project, BrandKit } from '../types';
 import { generateId } from '../utils';
-import { XIcon, FolderIcon, PaletteIcon } from './Icons';
+import { XIcon, FolderIcon } from './Icons';
 
 interface ProjectManagerProps {
     isOpen: boolean;
