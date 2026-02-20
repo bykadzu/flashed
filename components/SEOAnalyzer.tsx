@@ -7,7 +7,7 @@
  * SEOAnalyzer - Scans generated HTML and provides an SEO score with actionable suggestions
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { SEOAnalysis, SEOIssue } from '../types';
 import { XIcon, CheckIcon, ShieldIcon } from './Icons';
 
