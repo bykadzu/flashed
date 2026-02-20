@@ -550,9 +550,7 @@ export default function SEOAnalyzer({ isOpen, onClose, html, onAutoFix }: SEOAna
         return grouped;
     }, [analysis]);
 
-    const fixableCount = useMemo(() => {
-        return analysis.issues.filter((i) => i.fix).length;
-    }, [analysis]);
+    const fixableCount = analysis.issues.filter((i) => i.fix).length;
 
     // Reset fixApplied when html changes
     useEffect(() => {
