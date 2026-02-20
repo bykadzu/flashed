@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { XIcon, TemplateIcon } from './Icons';
+import { TEMPLATES as ALL_TEMPLATES, getSwissTemplates } from '../templates';
 
 interface Template {
     id: string;
@@ -13,6 +14,7 @@ interface Template {
     prompt: string;
     suggestedStyle?: string;
     previewColor: string;
+    isSwiss?: boolean;
 }
 
 interface TemplateLibraryProps {
@@ -289,14 +291,21 @@ const INDUSTRIES = [...new Set(TEMPLATES.map(t => t.industry))];
 export default function TemplateLibrary({ isOpen, onClose, onSelectTemplate }: TemplateLibraryProps) {
     const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [showSwissOnly, setShowSwissOnly] = useState(false);
+    
+    const swissTemplates = getSwissTemplates();
+    const swissIndustries = [...new Set(swissTemplates.map(t => t.industry))];
+    const allIndustries = [...new Set(ALL_TEMPLATES.map(t => t.industry))];
     
     const filteredTemplates = TEMPLATES.filter(t => {
+        const matchesSwiss = !showSwissOnly || t.isSwiss;
         const matchesIndustry = !selectedIndustry || t.industry === selectedIndustry;
         const matchesSearch = !searchQuery || 
             t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             t.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            t.industry.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesIndustry && matchesSearch;
+            t.industry.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (t.prompt.toLowerCase().includes('swiss') && searchQuery.toLowerCase().includes('swiss'));
+        return matchesSwiss && matchesIndustry && matchesSearch;
     });
     
     const handleSelect = (template: Template) => {
@@ -339,6 +348,21 @@ export default function TemplateLibrary({ isOpen, onClose, onSelectTemplate }: T
                         className="template-search"
                     />
                     
+                    <div className="filter-row">
+                        <button 
+                            className={`industry-filter ${!showSwissOnly ? 'active' : ''}`}
+                            onClick={() => { setShowSwissOnly(false); setSelectedIndustry(null); }}
+                        >
+                            All
+                        </button>
+                        <button 
+                            className={`industry-filter swiss-filter ${showSwissOnly ? 'active' : ''}`}
+                            onClick={() => { setShowSwissOnly(true); setSelectedIndustry(null); }}
+                        >
+                            🇨🇭 Swiss
+                        </button>
+                    </div>
+                    
                     <div className="industry-filters">
                         <button 
                             className={`industry-filter ${!selectedIndustry ? 'active' : ''}`}
@@ -346,7 +370,7 @@ export default function TemplateLibrary({ isOpen, onClose, onSelectTemplate }: T
                         >
                             All
                         </button>
-                        {INDUSTRIES.map(industry => (
+                        {(showSwissOnly ? swissIndustries : allIndustries).map(industry => (
                             <button
                                 key={industry}
                                 className={`industry-filter ${selectedIndustry === industry ? 'active' : ''}`}
