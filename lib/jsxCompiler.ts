@@ -70,14 +70,14 @@ function wrapInHTML(jsCode: string, title: string): string {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>${safeName}</title>
-<script src="https://unpkg.com/react@19/umd/react.production.min.js"><\/script>
-<script src="https://unpkg.com/react-dom@19/umd/react-dom.production.min.js"><\/script>
+<script src="https://unpkg.com/react@19/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@19/umd/react-dom.production.min.js"></script>
 </head><body>
 <div id="root"></div>
 <script>
 ${safeJsCode}
 ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(App));
-<\/script>
+</script>
 </body></html>`;
 }
 

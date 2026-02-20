@@ -302,6 +302,37 @@ export const TEMPLATES: Template[] = [
         suggestedStyle: 'Trusted Swiss finance',
         previewColor: '#1565c0',
         isSwiss: true
+    },
+    // ============ Swiss Service Trades ============
+    {
+        id: 'handyman-swiss',
+        name: 'Handyman Services',
+        industry: 'Services',
+        description: 'Swiss handyman and renovation services',
+        prompt: 'Swiss handyman (Allrounder) landing page with renovation services, small repairs, furniture assembly, painting, plumbing minor fixes, and contact form in German/Swiss German',
+        suggestedStyle: 'Reliable Swiss tradesperson',
+        previewColor: '#ff8f00',
+        isSwiss: true
+    },
+    {
+        id: 'cleaning-swiss',
+        name: 'Cleaning Services',
+        industry: 'Services',
+        description: 'Swiss cleaning company',
+        prompt: 'Swiss cleaning services landing page with office cleaning, home cleaning, move-in/move-out cleaning, window cleaning, and subscription plans in German/Swiss German',
+        suggestedStyle: 'Clean professional',
+        previewColor: '#26a69a',
+        isSwiss: true
+    },
+    {
+        id: 'umzug-swiss',
+        name: 'Moving Company',
+        industry: 'Services',
+        description: 'Swiss moving and transport',
+        prompt: 'Swiss moving company (Umzugsfirma) landing page with packing services, storage solutions, piano moving, international moves, and free quote request in German/Swiss German',
+        suggestedStyle: 'Professional Swiss movers',
+        previewColor: '#5d4037',
+        isSwiss: true
     }
 ];
 
