@@ -39,7 +39,7 @@ const SandboxedFrame: React.FC<SandboxedFrameProps> = ({
       <iframe
         title={`Preview of ${title}`}
         srcDoc={safeContent}
-        sandbox={isTrusted ? "allow-scripts allow-same-origin allow-forms" : "allow-same-origin"}
+        sandbox={isTrusted ? "allow-scripts allow-forms" : "allow-same-origin"}
         className="border-none block"
         style={style}
         loading="lazy"

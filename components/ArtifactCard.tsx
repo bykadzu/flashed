@@ -190,7 +190,7 @@ const ArtifactCard = React.memo(({
                     id={`iframe-${id}`}
                     srcDoc={srcDoc} 
                     title={id} 
-                    sandbox="allow-scripts allow-forms allow-modals allow-popups allow-presentation allow-same-origin"
+                    sandbox="allow-scripts allow-forms allow-modals allow-popups allow-presentation"
                     className="artifact-iframe"
                 />
             </div>
