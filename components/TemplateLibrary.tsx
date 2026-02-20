@@ -273,7 +273,8 @@ const TEMPLATES: Template[] = [
         description: 'Physical therapy in Switzerland',
         prompt: 'Swiss physiotherapy practice landing page with treatments, therapist qualifications (Steiner licensed), appointment booking, insurance billing info (KVG/VVG), and location with parking',
         suggestedStyle: 'Professional Swiss healthcare',
-        previewColor: '#00897b'
+        previewColor: '#00897b',
+        isSwiss: true
     },
     {
         id: 'immobilienmakler',
@@ -282,20 +283,20 @@ const TEMPLATES: Template[] = [
         description: 'Swiss real estate services',
         prompt: 'Swiss real estate agent landing page with property listings, property search, sold properties, agent profile, financing advice, and contact form in German/Swiss German',
         suggestedStyle: 'Premium Swiss real estate',
-        previewColor: '#6d4c41'
+        previewColor: '#6d4c41',
+        isSwiss: true
     }
 ];
 
-const INDUSTRIES = [...new Set(TEMPLATES.map(t => t.industry))];
+// Hoisted constants to avoid recomputation on every render
+const swissTemplates = getSwissTemplates();
+const swissIndustries = [...new Set(swissTemplates.map(t => t.industry))];
+const allIndustries = [...new Set(ALL_TEMPLATES.map(t => t.industry))];
 
 export default function TemplateLibrary({ isOpen, onClose, onSelectTemplate }: TemplateLibraryProps) {
     const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [showSwissOnly, setShowSwissOnly] = useState(false);
-    
-    const swissTemplates = getSwissTemplates();
-    const swissIndustries = [...new Set(swissTemplates.map(t => t.industry))];
-    const allIndustries = [...new Set(ALL_TEMPLATES.map(t => t.industry))];
     
     const filteredTemplates = TEMPLATES.filter(t => {
         const matchesSwiss = !showSwissOnly || t.isSwiss;
@@ -412,7 +413,7 @@ export default function TemplateLibrary({ isOpen, onClose, onSelectTemplate }: T
                     {filteredTemplates.length === 0 && (
                         <div className="no-templates">
                             <p>No templates match your search.</p>
-                            <button onClick={() => { setSearchQuery(''); setSelectedIndustry(null); }}>
+                            <button onClick={() => { setSearchQuery(''); setSelectedIndustry(null); setShowSwissOnly(false); }}>
                                 Clear filters
                             </button>
                         </div>
