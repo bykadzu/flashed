@@ -5,6 +5,35 @@
 const DEFAULT_MAX_RETRIES = 3;
 const DEFAULT_INITIAL_DELAY_MS = 1000;
 const DEFAULT_BACKOFF_MULTIPLIER = 2;
+const DEFAULT_FETCH_TIMEOUT_MS = 30000;
+
+/**
+ * Fetch with timeout wrapper
+ */
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit & { timeout?: number } = {}
+): Promise<Response> {
+  const { timeout = DEFAULT_FETCH_TIMEOUT_MS, ...fetchOptions } = options;
+  
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  
+  try {
+    const response = await fetch(url, {
+      ...fetchOptions,
+      signal: controller.signal
+    });
+    return response;
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error(`Request timeout after ${timeout}ms`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
 
 /**
  * Retry helper with exponential backoff
@@ -182,7 +211,7 @@ function convertToOpenRouterFormat(contents: Message | Message[]): Array<{ role:
 export async function generateContent(apiKey: string, options: GenerateOptions): Promise<{ text: string }> {
   const messages = convertToOpenRouterFormat(options.contents);
 
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+  const response = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
@@ -210,7 +239,7 @@ export async function generateContent(apiKey: string, options: GenerateOptions):
 export async function* generateContentStream(apiKey: string, options: GenerateOptions): AsyncGenerator<{ text: string }> {
   const messages = convertToOpenRouterFormat(options.contents);
 
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+  const response = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
