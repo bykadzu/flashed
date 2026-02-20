@@ -2255,13 +2255,13 @@ Return ONLY RAW HTML.
                          <p>Instant landing pages for customer demos</p>
                          {!hasStarted && (
                              <>
-                                 <button className="surprise-button" aria-label="Get random example prompt" onClick={handleSurpriseMe} disabled={isLoading}>
+                                 <button className="surprise-button" onClick={handleSurpriseMe} disabled={isLoading} aria-label="Example Pitch — generate a surprise landing page">
                                      <SparklesIcon /> Example Pitch
                                  </button>
-                                 <button className="template-browse-btn" aria-label="Browse templates" onClick={() => setIsTemplateLibraryOpen(true)} disabled={isLoading}>
+                                 <button className="template-browse-btn" onClick={() => setIsTemplateLibraryOpen(true)} disabled={isLoading} aria-label="Browse templates">
                                      <TemplateIcon /> Browse Templates
                                  </button>
-                                 <button className="template-browse-btn" aria-label="View privacy policy" onClick={() => setIsPrivacyPolicyOpen(true)} disabled={isLoading}>
+                                 <button className="template-browse-btn" onClick={() => setIsPrivacyPolicyOpen(true)} disabled={isLoading} aria-label="Open privacy policy generator">
                                      <ShieldIcon /> Privacy Policy
                                  </button>
                              </>
@@ -2337,16 +2337,16 @@ Return ONLY RAW HTML.
                  <div className="action-buttons">
                     {currentSession?.mode === 'site' ? (
                         <>
-                            <button onClick={() => setFocusedArtifactIndex(null)} aria-label="View grid">
+                            <button onClick={() => setFocusedArtifactIndex(null)} aria-label="Switch to grid view">
                                 <GridIcon /> Grid
                             </button>
-                            <button onClick={handleShowCode} aria-label="Show source code">
+                            <button onClick={handleShowCode} aria-label="View source code">
                                 <CodeIcon /> Source
                             </button>
-                            <button onClick={() => setIsExportModalOpen(true)} title="Export (Ctrl+E)">
+                            <button onClick={() => setIsExportModalOpen(true)} title="Export (Ctrl+E)" aria-label="Export page">
                                 <ExportIcon /> Export
                             </button>
-                            <button onClick={handleDownload} aria-label="Download HTML">
+                            <button onClick={handleDownload} aria-label="Download page">
                                 <DownloadIcon /> Download
                             </button>
                             <button onClick={handleSaveToLibrary} aria-label="Save to library">
@@ -2358,7 +2358,7 @@ Return ONLY RAW HTML.
                         </>
                     ) : (
                         <>
-                            <button onClick={() => setFocusedArtifactIndex(null)} aria-label="View grid">
+                            <button onClick={() => setFocusedArtifactIndex(null)} aria-label="Switch to grid view">
                                 <GridIcon /> Grid
                             </button>
                             {/* Undo/Redo */}
@@ -2375,7 +2375,7 @@ Return ONLY RAW HTML.
                                             } : sess
                                         ));
                                     }
-                                }} disabled={!undoRedo.canUndo} title="Undo (Ctrl+Z)">
+                                }} disabled={!undoRedo.canUndo} title="Undo (Ctrl+Z)" aria-label="Undo">
                                     <UndoIcon />
                                 </button>
                                 <button onClick={() => {
@@ -2390,7 +2390,7 @@ Return ONLY RAW HTML.
                                             } : sess
                                         ));
                                     }
-                                }} disabled={!undoRedo.canRedo} title="Redo (Ctrl+Shift+Z)">
+                                }} disabled={!undoRedo.canRedo} title="Redo (Ctrl+Shift+Z)" aria-label="Redo">
                                     <RedoIcon />
                                 </button>
                             </div>
@@ -2404,19 +2404,19 @@ Return ONLY RAW HTML.
                             <button onClick={handleGenerateVariations} disabled={isLoading} aria-label="Generate variations">
                                 <SparklesIcon /> Variations
                             </button>
-                            <button onClick={handleShowCode} aria-label="Show source code">
+                            <button onClick={handleShowCode} aria-label="View source code">
                                 <CodeIcon /> Source
                             </button>
-                            <button onClick={() => setIsExportModalOpen(true)} title="Export (Ctrl+E)">
+                            <button onClick={() => setIsExportModalOpen(true)} title="Export (Ctrl+E)" aria-label="Export page">
                                 <ExportIcon /> Export
                             </button>
-                            <button onClick={handleDownload}>
+                            <button onClick={handleDownload} aria-label="Download page">
                                 <DownloadIcon /> Download
                             </button>
-                            <button onClick={handleSaveToLibrary} title="Save (Ctrl+S)">
+                            <button onClick={handleSaveToLibrary} title="Save (Ctrl+S)" aria-label="Save to library">
                                 <BookmarkIcon /> Save
                             </button>
-                            <button onClick={() => setIsVersionHistoryOpen(true)} aria-label="View version history">
+                            <button onClick={() => setIsVersionHistoryOpen(true)} aria-label="Versions – view version history">
                                 <HistoryIcon /> Versions
                             </button>
                             <button onClick={() => setIsSEOAnalyzerOpen(true)} aria-label="Analyze SEO">
@@ -2425,11 +2425,11 @@ Return ONLY RAW HTML.
                             <button onClick={() => setIsComponentExtractorOpen(true)} aria-label="Extract components">
                                 <ScissorsIcon /> Extract
                             </button>
-                            <button onClick={() => { setAbVariants([]); setIsABTestOpen(true); }} aria-label="Start A/B test">
+                            <button onClick={() => { setAbVariants([]); setIsABTestOpen(true); }} aria-label="Open A/B test generator">
                                 <ABTestIcon /> A/B Test
                             </button>
                             {currentSession && currentSession.artifacts.length > 3 && (
-                                <button onClick={handleSaveBatchToLibrary} aria-label="Save all artifacts">
+                                <button onClick={handleSaveBatchToLibrary} aria-label="Save all variations to library">
                                     <LayersIcon /> Save All
                                 </button>
                             )}
