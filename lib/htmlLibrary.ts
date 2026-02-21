@@ -30,17 +30,27 @@ export const saveItem = (item: HTMLItem): HTMLItem[] => {
 };
 
 export const deleteItem = (id: string): HTMLItem[] => {
-    const current = getLibrary();
-    const updated = current.filter(i => i.id !== id);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    return updated;
+    try {
+        const current = getLibrary();
+        const updated = current.filter(i => i.id !== id);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        return updated;
+    } catch (e) {
+        console.error("Failed to delete item", e);
+        return [];
+    }
 };
 
 export const updateItem = (id: string, updates: Partial<HTMLItem>): HTMLItem[] => {
-    const current = getLibrary();
-    const updated = current.map(item => item.id === id ? { ...item, ...updates } : item);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    return updated;
+    try {
+        const current = getLibrary();
+        const updated = current.map(item => item.id === id ? { ...item, ...updates } : item);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        return updated;
+    } catch (e) {
+        console.error("Failed to update item", e);
+        return [];
+    }
 };
 
 /**
