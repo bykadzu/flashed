@@ -130,6 +130,7 @@ function analyzeHTML(html: string): SEOAnalysis {
             type: 'info',
             category: 'Meta Tags',
             message: 'Missing Open Graph title tag. Social media shares will lack a custom title.',
+            fix: 'add-og-title',
         });
     }
     if (!hasOgDesc) {
@@ -137,6 +138,7 @@ function analyzeHTML(html: string): SEOAnalysis {
             type: 'info',
             category: 'Meta Tags',
             message: 'Missing Open Graph description tag. Social media shares will lack a description.',
+            fix: 'add-og-description',
         });
     }
     if (!hasOgImage) {
@@ -144,6 +146,7 @@ function analyzeHTML(html: string): SEOAnalysis {
             type: 'info',
             category: 'Meta Tags',
             message: 'Missing Open Graph image tag. Social media shares will not display a preview image.',
+            fix: 'add-og-image',
         });
     }
 
@@ -373,6 +376,9 @@ function analyzeHTML(html: string): SEOAnalysis {
             hasViewport,
             hasCharset,
             hasOgTags,
+            hasOgTitle,
+            hasOgDesc,
+            hasOgImage,
             hasTwitterCard,
             hasCanonical,
             hasFavicon,
@@ -465,6 +471,45 @@ function applyAutoFixes(html: string, analysis: SEOAnalysis): string {
                 }
                 break;
             }
+            case 'add-og-title': {
+                if (!doc.querySelector('meta[property="og:title"]')) {
+                    const title = doc.querySelector('title')?.textContent || doc.querySelector('h1')?.textContent || 'My Page';
+                    const meta = doc.createElement('meta');
+                    meta.setAttribute('property', 'og:title');
+                    meta.setAttribute('content', title.trim());
+                    const head = doc.head || doc.createElement('head');
+                    if (!doc.head) doc.documentElement.prepend(head);
+                    head.appendChild(meta);
+                }
+                break;
+            }
+            case 'add-og-description': {
+                if (!doc.querySelector('meta[property="og:description"]')) {
+                    const desc = doc.querySelector('meta[name="description"]')?.getAttribute('content') || 
+                                 doc.querySelector('p')?.textContent?.slice(0, 160) || 'Page description';
+                    const meta = doc.createElement('meta');
+                    meta.setAttribute('property', 'og:description');
+                    meta.setAttribute('content', desc.trim());
+                    const head = doc.head || doc.createElement('head');
+                    if (!doc.head) doc.documentElement.prepend(head);
+                    head.appendChild(meta);
+                }
+                break;
+            }
+            case 'add-og-image': {
+                if (!doc.querySelector('meta[property="og:image"]')) {
+                    // Use first image if available, otherwise use placeholder
+                    const firstImg = doc.querySelector('img');
+                    const imgSrc = firstImg?.getAttribute('src') || '';
+                    const meta = doc.createElement('meta');
+                    meta.setAttribute('property', 'og:image');
+                    meta.setAttribute('content', imgSrc || 'https://placehold.co/1200x630/png?text=Page+Preview');
+                    const head = doc.head || doc.createElement('head');
+                    if (!doc.head) doc.documentElement.prepend(head);
+                    head.appendChild(meta);
+                }
+                break;
+            }
             case 'fix-heading-hierarchy': {
                 const headings = doc.querySelectorAll('h1, h2, h3, h4, h5, h6');
                 let currentLevel = 0;
@@ -522,6 +567,9 @@ export default function SEOAnalyzer({ isOpen, onClose, html, onAutoFix }: SEOAna
                     hasViewport: false,
                     hasCharset: false,
                     hasOgTags: false,
+                    hasOgTitle: false,
+                    hasOgDesc: false,
+                    hasOgImage: false,
                     hasTwitterCard: false,
                     hasCanonical: false,
                     hasFavicon: false,
