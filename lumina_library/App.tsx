@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { Plus, Search, Grid, LayoutList, Layers, Github } from 'lucide-react';
+import { Plus, Search, Grid, LayoutList, Layers } from 'lucide-react';
 import { HTMLItem, SortOption } from './types';
 import * as storage from './utils/storage';
 import PreviewCard from './components/PreviewCard';

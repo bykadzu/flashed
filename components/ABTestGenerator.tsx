@@ -80,8 +80,8 @@ const AB_TEST_CATEGORIES: ABTestCategory[] = [
 interface ABTestGeneratorProps {
     isOpen: boolean;
     onClose: () => void;
-    originalHtml: string;
-    prompt: string;
+    _originalHtml: string;
+    _prompt: string;
     onGenerate: (category: string, description: string) => void;
     onApplyVariant: (html: string) => void;
     variants: ABVariant[];
@@ -91,8 +91,8 @@ interface ABTestGeneratorProps {
 export default function ABTestGenerator({
     isOpen,
     onClose,
-    originalHtml,
-    prompt,
+    _originalHtml,
+    _prompt,
     onGenerate,
     onApplyVariant,
     variants,
@@ -128,10 +128,6 @@ export default function ABTestGenerator({
     };
 
     const selectedCategoryData = AB_TEST_CATEGORIES.find(c => c.id === selectedCategory);
-
-    const isVariantGenerated = (description: string): boolean => {
-        return variants.some(v => v.description === description && v.html !== '');
-    };
 
     const getVariantForDescription = (description: string): ABVariant | undefined => {
         return variants.find(v => v.description === description && v.html !== '');

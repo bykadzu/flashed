@@ -577,7 +577,7 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem, onOpenSiteI
                                             </div>
                                             {!isExpanded && (
                                                 <div className="batch-stacked-preview" onClick={() => toggleBatchExpanded(batchId)}>
-                                                    {batchItems.slice(0, 3).map((item, i) => (
+                                                    {batchItems.slice(0, 3).map((item) => (
                                                         <div key={item.id} className="batch-stack-card" />
                                                     ))}
                                                 </div>
