@@ -108,7 +108,6 @@ const ArtifactCard = React.memo(({
                             }
                         }
                         
-                        console.log('Link navigation prevented in preview:', href);
                         return;
                     }
                     
