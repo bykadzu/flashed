@@ -4,6 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { XIcon, TemplateIcon } from './Icons';
+import { TEMPLATES as ALL_TEMPLATES, getSwissTemplates } from '../templates';
 
 interface Template {
     id: string;
@@ -13,6 +14,7 @@ interface Template {
     prompt: string;
     suggestedStyle?: string;
     previewColor: string;
+    isSwiss?: boolean;
 }
 
 interface TemplateLibraryProps {
@@ -271,7 +273,8 @@ const TEMPLATES: Template[] = [
         description: 'Physical therapy in Switzerland',
         prompt: 'Swiss physiotherapy practice landing page with treatments, therapist qualifications (Steiner licensed), appointment booking, insurance billing info (KVG/VVG), and location with parking',
         suggestedStyle: 'Professional Swiss healthcare',
-        previewColor: '#00897b'
+        previewColor: '#00897b',
+        isSwiss: true
     },
     {
         id: 'immobilienmakler',
@@ -280,23 +283,30 @@ const TEMPLATES: Template[] = [
         description: 'Swiss real estate services',
         prompt: 'Swiss real estate agent landing page with property listings, property search, sold properties, agent profile, financing advice, and contact form in German/Swiss German',
         suggestedStyle: 'Premium Swiss real estate',
-        previewColor: '#6d4c41'
+        previewColor: '#6d4c41',
+        isSwiss: true
     }
 ];
 
-const INDUSTRIES = [...new Set(TEMPLATES.map(t => t.industry))];
+// Hoisted constants to avoid recomputation on every render
+const swissTemplates = getSwissTemplates();
+const swissIndustries = [...new Set(swissTemplates.map(t => t.industry))];
+const allIndustries = [...new Set(ALL_TEMPLATES.map(t => t.industry))];
 
 export default function TemplateLibrary({ isOpen, onClose, onSelectTemplate }: TemplateLibraryProps) {
     const [selectedIndustry, setSelectedIndustry] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [showSwissOnly, setShowSwissOnly] = useState(false);
     
     const filteredTemplates = TEMPLATES.filter(t => {
+        const matchesSwiss = !showSwissOnly || t.isSwiss;
         const matchesIndustry = !selectedIndustry || t.industry === selectedIndustry;
         const matchesSearch = !searchQuery || 
             t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
             t.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            t.industry.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesIndustry && matchesSearch;
+            t.industry.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (t.prompt.toLowerCase().includes('swiss') && searchQuery.toLowerCase().includes('swiss'));
+        return matchesSwiss && matchesIndustry && matchesSearch;
     });
     
     const handleSelect = (template: Template) => {
@@ -339,6 +349,21 @@ export default function TemplateLibrary({ isOpen, onClose, onSelectTemplate }: T
                         className="template-search"
                     />
                     
+                    <div className="filter-row">
+                        <button 
+                            className={`industry-filter ${!showSwissOnly ? 'active' : ''}`}
+                            onClick={() => { setShowSwissOnly(false); setSelectedIndustry(null); }}
+                        >
+                            All
+                        </button>
+                        <button 
+                            className={`industry-filter swiss-filter ${showSwissOnly ? 'active' : ''}`}
+                            onClick={() => { setShowSwissOnly(true); setSelectedIndustry(null); }}
+                        >
+                            🇨🇭 Swiss
+                        </button>
+                    </div>
+                    
                     <div className="industry-filters">
                         <button 
                             className={`industry-filter ${!selectedIndustry ? 'active' : ''}`}
@@ -346,7 +371,7 @@ export default function TemplateLibrary({ isOpen, onClose, onSelectTemplate }: T
                         >
                             All
                         </button>
-                        {INDUSTRIES.map(industry => (
+                        {(showSwissOnly ? swissIndustries : allIndustries).map(industry => (
                             <button
                                 key={industry}
                                 className={`industry-filter ${selectedIndustry === industry ? 'active' : ''}`}
@@ -388,7 +413,7 @@ export default function TemplateLibrary({ isOpen, onClose, onSelectTemplate }: T
                     {filteredTemplates.length === 0 && (
                         <div className="no-templates">
                             <p>No templates match your search.</p>
-                            <button onClick={() => { setSearchQuery(''); setSelectedIndustry(null); }}>
+                            <button onClick={() => { setSearchQuery(''); setSelectedIndustry(null); setShowSwissOnly(false); }}>
                                 Clear filters
                             </button>
                         </div>
