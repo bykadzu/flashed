@@ -42,7 +42,7 @@ export const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 export const INITIAL_PLACEHOLDERS = [
     "Landing page for an AI agent automation platform",
-    "Series A Fintech dashboard waiting list",
+    "Series A fintech dashboard waiting list",
     "Luxury real estate agency in Los Angeles",
     "Cybersecurity enterprise solution homepage",
     "Minimalist portfolio for a senior product designer",
