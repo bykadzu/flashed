@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, ExternalLink, Trash2, Smartphone, Monitor, Tablet, Code, Maximize2 } from 'lucide-react';
+import { X, ExternalLink, Trash2, Smartphone, Monitor, Tablet, Code } from 'lucide-react';
 import { HTMLItem, VIEWPORTS } from '../types';
 import Button from './Button';
 import SandboxedFrame from './SandboxedFrame';

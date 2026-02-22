@@ -347,6 +347,7 @@ export default function TemplateLibrary({ isOpen, onClose, onSelectTemplate }: T
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         className="template-search"
+                        aria-label="Search templates by name, description, or industry"
                     />
                     
                     <div className="filter-row">

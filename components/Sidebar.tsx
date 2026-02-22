@@ -6,7 +6,7 @@ import React from 'react';
 import { UserButton } from '@clerk/clerk-react';
 import { isClerkConfigured } from '../lib/env';
 import {
-    HomeIcon,
+    
     FolderIcon,
     HistoryIcon,
     ShareIcon,
