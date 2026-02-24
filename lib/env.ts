@@ -78,7 +78,7 @@ export function getApiKey(): string {
     if (!key) {
         throw new Error(
             'OpenRouter API key not configured. ' +
-            'Please set OPENROUTER_API_KEY in your .env file. ' +
+            'Please set VITE_OPENROUTER_API_KEY in your .env file. ' +
             'Get your key at https://openrouter.ai/keys'
         );
     }
