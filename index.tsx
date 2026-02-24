@@ -2168,8 +2168,8 @@ Return ONLY RAW HTML.
             <ABTestGenerator
                 isOpen={isABTestOpen}
                 onClose={() => { setIsABTestOpen(false); setAbVariants([]); }}
-                originalHtml={currentSession.artifacts[focusedArtifactIndex].html}
-                prompt={currentSession.prompt}
+                _originalHtml={currentSession.artifacts[focusedArtifactIndex].html}
+                _prompt={currentSession.prompt}
                 onGenerate={handleABGenerate}
                 onApplyVariant={handleApplyABVariant}
                 variants={abVariants}
