@@ -10,9 +10,7 @@
 // Environment variables - accessed via Vite's import.meta.env or injected via define
 export const ENV = {
     // API Keys
-    OPENROUTER_API_KEY: (typeof process !== 'undefined' && process.env?.API_KEY)
-        || import.meta.env.VITE_OPENROUTER_API_KEY
-        || '',
+    OPENROUTER_API_KEY: import.meta.env.VITE_OPENROUTER_API_KEY || '',
 
     // Supabase
     SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL || '',
