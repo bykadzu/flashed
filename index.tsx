@@ -930,10 +930,11 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
       try {
           const batchId = generateId();
           completeArtifacts.forEach((artifact, index) => {
+              const sessionPrompt = session.prompt || 'Untitled';
               const item = htmlLibrary.createLibraryItem(
                   artifact.html,
-                  session.prompt,
-                  artifact.seo?.title || `${session.prompt.slice(0, 30)} - ${artifact.styleName}`,
+                  sessionPrompt,
+                  artifact.seo?.title || `${sessionPrompt.slice(0, 30)} - ${artifact.styleName}`,
                   ['batch', `batch-${batchId}`]
               );
               item.batchId = batchId;
@@ -1358,9 +1359,10 @@ Return ONLY the complete, updated HTML. No explanations or markdown code blocks.
           isHome: true
       };
 
+      const siteName = session.prompt || 'Untitled Site';
       const newSite: Site = {
           id: generateId(),
-          name: session.prompt.substring(0, 50),
+          name: siteName.substring(0, 50),
           styleName: artifact.styleName,
           pages: [homePage],
           seo: artifact.seo,
