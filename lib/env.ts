@@ -7,10 +7,12 @@
  * - Single source of truth
  */
 
-// Environment variables - accessed via Vite's import.meta.env or injected via define
+// Environment variables - accessed via Vite's import.meta.env or process.env (server-side builds)
 export const ENV = {
     // API Keys
-    OPENROUTER_API_KEY: import.meta.env.VITE_OPENROUTER_API_KEY || '',
+    OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY 
+        || import.meta.env.VITE_OPENROUTER_API_KEY 
+        || '',
 
     // Supabase
     SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL || '',
