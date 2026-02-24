@@ -42,6 +42,18 @@ function sanitizePrompt(input: string): string {
 }
 
 /**
+ * Escape HTML special characters to prevent XSS
+ */
+function escapeHtml(str: string): string {
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+/**
  * Clean up HTML response from model
  */
 function cleanHtmlResponse(html: string): string {
@@ -707,7 +719,7 @@ function App() {
                       yield JSON.parse(jsonString);
                       buffer = buffer.substring(end + 1);
                       start = buffer.indexOf('{');
-                  } catch (e) {
+                  } catch {
                       start = buffer.indexOf('{', start + 1);
                   }
               } else {
@@ -792,7 +804,7 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
                         setComponentVariations(prev => [...prev, result]);
                     }
                     return result;
-                } catch (e) {
+                } catch {
                     // Individual variation failed, continue with others
                     return null;
                 }
@@ -1480,14 +1492,15 @@ Return ONLY RAW HTML.
           ));
           
       } catch (e) {
-          showError((e instanceof Error ? e.message : String(e)) || 'Failed to add page. Please try again.');
+          const errMsg = (e instanceof Error ? e.message : String(e));
+          showError(errMsg || 'Failed to add page. Please try again.');
           setSessions(prev => prev.map(s => 
               s.id === sessionId && s.site ? {
                   ...s,
                   site: {
                       ...s.site,
                       pages: s.site.pages.map(p => 
-                          p.id === pageId ? { ...p, html: `<div style="color: #ff6b6b; padding: 20px;">Error: ${e instanceof Error ? e.message : String(e)}</div>`, status: 'error' } : p
+                          p.id === pageId ? { ...p, html: `<div style="color: #ff6b6b; padding: 20px;">Error: ${escapeHtml(errMsg)}</div>`, status: 'error' } : p
                       )
                   }
               } : s
@@ -1750,7 +1763,7 @@ Return ONLY a raw JSON array of ${variantCount} strings describing the specific 
             try {
                 generatedStyles = JSON.parse(jsonMatch[0]);
             } catch (e) {
-                console.warn("Failed to parse styles, using fallbacks");
+                console.warn("Failed to parse styles, using fallbacks", e);
             }
         }
 
@@ -1895,12 +1908,13 @@ Return ONLY RAW HTML.
                 ));
 
             } catch (e) {
+                const errMsg = (e instanceof Error ? e.message : String(e));
                 showError(`Failed to generate ${artifact.styleName} variation`);
                 setSessions(prev => prev.map(sess =>
                     sess.id === sessionId ? {
                         ...sess,
                         artifacts: sess.artifacts.map(art =>
-                            art.id === artifact.id ? { ...art, html: `<div style="color: #ff6b6b; padding: 20px;">Error: ${e instanceof Error ? e.message : String(e)}</div>`, status: 'error' } : art
+                            art.id === artifact.id ? { ...art, html: `<div style="color: #ff6b6b; padding: 20px;">Error: ${escapeHtml(errMsg)}</div>`, status: 'error' } : art
                         )
                     } : sess
                 ));
