@@ -170,6 +170,22 @@ export default function ShareModal({ isOpen, onClose, artifact, prompt }: ShareM
                             >
                                 Download HTML for Manual Sharing
                             </button>
+                            
+                            <button 
+                                className="publish-btn secondary"
+                                onClick={async () => {
+                                    const seo: SEOSettings = {
+                                        title: prompt.slice(0, 60),
+                                        description: `${prompt}`,
+                                    };
+                                    const preparedHtml = prepareHtmlForPublishing(artifact.html, seo);
+                                    await navigator.clipboard.writeText(preparedHtml);
+                                    setCopied(true);
+                                    setTimeout(() => setCopied(false), COPY_FEEDBACK_DURATION);
+                                }}
+                            >
+                                Copy Full HTML to Clipboard
+                            </button>
                         </div>
                     ) : (
                         <div className="published-success">
@@ -178,9 +194,16 @@ export default function ShareModal({ isOpen, onClose, artifact, prompt }: ShareM
                             </div>
                             <h3>Preview Ready!</h3>
                             
-                            {error && (
-                                <div className="warning-box" style={{ marginBottom: '16px', textAlign: 'left' }}>
-                                    <p style={{ margin: 0 }}>{error}</p>
+                            {previewUrl && (
+                                <div style={{ marginTop: '20px', textAlign: 'center' }}>
+                                    <p style={{ margin: '0 0 12px 0', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                        Scan to preview on mobile:
+                                    </p>
+                                    <img 
+                                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(previewUrl)}`}
+                                        alt="QR Code for preview link"
+                                        style={{ borderRadius: '8px' }}
+                                    />
                                 </div>
                             )}
                             
