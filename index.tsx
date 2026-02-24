@@ -74,7 +74,7 @@ async function withRetry<T>(
     for (let i = 0; i <= maxRetries; i++) {
         try {
             return await fn();
-        } catch {
+        } catch (e) {
             lastError = e;
             if (i < maxRetries) {
                 await new Promise(r => setTimeout(r, baseDelay * Math.pow(2, i)));
@@ -293,7 +293,7 @@ function App() {
                   setVersionHistory(parsed);
               }
           }
-      } catch {
+      } catch (e) {
           console.warn("Failed to load sessions", e);
       }
 
@@ -310,7 +310,7 @@ function App() {
               // Limit to last 10 to avoid quota issues
               const toSave = sessions.slice(-10);
               localStorage.setItem('flash_ui_sessions', JSON.stringify(toSave));
-          } catch {
+          } catch (e) {
               console.warn("Failed to save sessions (quota exceeded?)", e);
           }
       }
@@ -320,7 +320,7 @@ function App() {
   useEffect(() => {
       try {
           localStorage.setItem('flash_ui_brand_kits', JSON.stringify(brandKits));
-      } catch {
+      } catch (e) {
           console.warn("Failed to save brand kits", e);
       }
   }, [brandKits]);
@@ -329,7 +329,7 @@ function App() {
   useEffect(() => {
       try {
           localStorage.setItem('flash_ui_projects', JSON.stringify(projects));
-      } catch {
+      } catch (e) {
           console.warn("Failed to save projects", e);
       }
   }, [projects]);
@@ -341,7 +341,7 @@ function App() {
               // Keep last 100 versions to avoid quota issues
               const toSave = versionHistory.slice(-100);
               localStorage.setItem('flashed_version_history', JSON.stringify(toSave));
-          } catch {
+          } catch (e) {
               console.warn("Failed to save version history", e);
           }
       }
@@ -666,7 +666,7 @@ function App() {
                       setPlaceholders(prev => [...prev, ...shuffled]);
                   }
               }
-          } catch {
+          } catch (e) {
               console.warn("Silently failed to fetch dynamic placeholders", e);
           }
       };
@@ -707,7 +707,7 @@ function App() {
                       yield JSON.parse(jsonString);
                       buffer = buffer.substring(end + 1);
                       start = buffer.indexOf('{');
-                  } catch {
+                  } catch (e) {
                       start = buffer.indexOf('{', start + 1);
                   }
               } else {
@@ -792,7 +792,7 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
                         setComponentVariations(prev => [...prev, result]);
                     }
                     return result;
-                } catch {
+                } catch (e) {
                     // Individual variation failed, continue with others
                     return null;
                 }
@@ -803,7 +803,7 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
         if (successCount === 0) {
             showError('Failed to generate variations. Please try again.');
         }
-    } catch {
+    } catch (e) {
         showError((e instanceof Error ? e.message : String(e)) || 'Failed to generate variations');
     } finally {
         setIsLoading(false);
@@ -886,7 +886,7 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
                   htmlLibrary.saveItem(item);
               });
               showSuccess(`Saved ${pages.length} site pages to library!`);
-          } catch {
+          } catch (e) {
               showError((e instanceof Error ? e.message : String(e)) || 'Failed to save site to library');
           }
           return;
@@ -904,7 +904,7 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
           );
           htmlLibrary.saveItem(item);
           showSuccess('Saved to library!');
-      } catch {
+      } catch (e) {
           showError((e instanceof Error ? e.message : String(e)) || 'Failed to save to library');
       }
   };
@@ -929,7 +929,7 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
               htmlLibrary.saveItem(item);
           });
           showSuccess(`Saved ${completeArtifacts.length} variants to library!`);
-      } catch {
+      } catch (e) {
           showError((e instanceof Error ? e.message : String(e)) || 'Failed to save batch to library');
       }
   };
@@ -1027,7 +1027,7 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
               };
               setAbVariants(prev => [...prev, variant]);
           }
-      } catch {
+      } catch (e) {
           showError((e instanceof Error ? e.message : String(e)) || 'Failed to generate A/B variant');
       } finally {
           setIsABGenerating(false);
@@ -1175,7 +1175,7 @@ Return ONLY the complete, updated HTML. No explanations or markdown code blocks.
               } : sess
           ));
           
-      } catch {
+      } catch (e) {
           showError((e instanceof Error ? e.message : String(e)) || 'Failed to refine design. Please try again.');
           // Restore original state on error
           setSessions(prev => prev.map((sess, i) => 
@@ -1479,7 +1479,7 @@ Return ONLY RAW HTML.
               } : s
           ));
           
-      } catch {
+      } catch (e) {
           showError((e instanceof Error ? e.message : String(e)) || 'Failed to add page. Please try again.');
           setSessions(prev => prev.map(s => 
               s.id === sessionId && s.site ? {
@@ -1673,7 +1673,7 @@ Return ONLY RAW HTML.
                 ));
             }
             
-        } catch {
+        } catch (e) {
             showError((e instanceof Error ? e.message : String(e)) || 'Failed to generate site. Please try again.');
         } finally {
             setIsLoading(false);
@@ -1749,7 +1749,7 @@ Return ONLY a raw JSON array of ${variantCount} strings describing the specific 
         if (jsonMatch) {
             try {
                 generatedStyles = JSON.parse(jsonMatch[0]);
-            } catch {
+            } catch (e) {
                 console.warn("Failed to parse styles, using fallbacks");
             }
         }
@@ -1894,7 +1894,7 @@ Return ONLY RAW HTML.
                     } : sess
                 ));
 
-            } catch {
+            } catch (e) {
                 showError(`Failed to generate ${artifact.styleName} variation`);
                 setSessions(prev => prev.map(sess =>
                     sess.id === sessionId ? {
@@ -1913,7 +1913,7 @@ Return ONLY RAW HTML.
             await Promise.all(batch.map((art, i) => generateArtifact(art, generatedStyles[batchStart + i])));
         }
 
-    } catch {
+    } catch (e) {
         showError((e instanceof Error ? e.message : String(e)) || 'Failed to generate designs. Please try again.');
     } finally {
         setIsLoading(false);
