@@ -135,6 +135,16 @@ export function clamp(value: number, min: number, max: number): number {
 }
 
 /**
+ * Validates an email address format
+ * @param email - Email string to validate
+ * @returns true if valid email format
+ */
+export function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+/**
  * Generates a random string of specified length
  */
 export function randomString(length: number): string {
@@ -144,6 +154,31 @@ export function randomString(length: number): string {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
   }
   return result;
+}
+
+/**
+ * Converts a string to a URL-friendly slug
+ * @param text - Text to slugify
+ * @returns Slugified string
+ */
+export function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/**
+ * Truncates a string to a maximum length with ellipsis
+ * @param text - Text to truncate
+ * @param maxLength - Maximum length (default 100)
+ * @returns Truncated string
+ */
+export function truncate(text: string, maxLength = 100): string {
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength - 3) + '...';
 }
 
 /**
