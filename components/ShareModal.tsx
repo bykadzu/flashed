@@ -20,7 +20,6 @@ export default function ShareModal({ isOpen, onClose, artifact, prompt }: ShareM
     const [isGenerating, setIsGenerating] = useState(false);
     const [copied, setCopied] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [expiresIn, setExpiresIn] = useState<string>('24h');
     
     useEffect(() => {
         if (isOpen) {
@@ -76,7 +75,7 @@ export default function ShareModal({ isOpen, onClose, artifact, prompt }: ShareM
                 setPreviewUrl(blobUrl);
                 setError('Note: This preview link only works on your device. Configure Supabase for shareable links.');
             }
-        } catch (err: any) {
+        } catch {
             // Final fallback: blob URL
             const seo: SEOSettings = {
                 title: prompt.slice(0, 60),
