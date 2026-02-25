@@ -1004,7 +1004,7 @@ Create an A/B test variant of this design.
 
 **ORIGINAL DESIGN:**
 \`\`\`html
-${artifact.html.substring(0, 6000)}
+${artifact.html.substring(0, HTML_PREVIEW_MAX_LENGTH)}
 \`\`\`
 
 **A/B TEST CATEGORY:** ${category}
