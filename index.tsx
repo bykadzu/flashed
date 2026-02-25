@@ -482,6 +482,20 @@ function App() {
               return;
           }
 
+          // Ctrl+Enter: Generate more variants
+          if (mod && e.key === 'Enter') {
+              e.preventDefault();
+              handleGenerateVariations?.();
+              return;
+          }
+
+          // Ctrl+R: Refine current design
+          if (mod && e.key === 'r') {
+              e.preventDefault();
+              if (focusedArtifactIndex !== null) setIsRefineDialogOpen?.(true);
+              return;
+          }
+
           // Arrow keys for navigation when not in input
           if (e.key === 'ArrowLeft') { prevItem(); return; }
           if (e.key === 'ArrowRight') { nextItem(); return; }
