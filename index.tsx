@@ -131,7 +131,7 @@ import {
 } from './components/Icons';
 import PublishModal from './components/PublishModal';
 import ShareModal from './components/ShareModal';
-import RefineInput from './components/RefineInput';
+import RefineInput, { RefineInputHandle } from './components/RefineInput';
 import BrandKitEditor from './components/BrandKitEditor';
 import ProjectManager from './components/ProjectManager';
 import TemplateLibrary from './components/TemplateLibrary';
@@ -266,6 +266,7 @@ function App() {
   const urlInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const gridScrollRef = useRef<HTMLDivElement>(null);
+  const refineInputRef = useRef<RefineInputHandle>(null);
 
   // Load from LocalStorage
   useEffect(() => {
@@ -482,6 +483,23 @@ function App() {
               return;
           }
 
+          // Ctrl+Enter: Generate more variants
+          if (mod && e.key === 'Enter') {
+              e.preventDefault();
+              if (isLoading) return; // Respect disabled state
+              handleGenerateVariations?.();
+              return;
+          }
+
+          // Ctrl+R: Refine current design
+          if (mod && e.key === 'r') {
+              e.preventDefault();
+              if (focusedArtifactIndex !== null) {
+                  refineInputRef.current?.focusInput();
+              }
+              return;
+          }
+
           // Arrow keys for navigation when not in input
           if (e.key === 'ArrowLeft') { prevItem(); return; }
           if (e.key === 'ArrowRight') { nextItem(); return; }
@@ -501,7 +519,7 @@ function App() {
       return () => document.removeEventListener('keydown', handleGlobalKeyDown);
   }, [focusedArtifactIndex, currentSessionIndex, undoRedo.canUndo, undoRedo.canRedo,
       isExportModalOpen, isVersionHistoryOpen, isSEOAnalyzerOpen, isComponentExtractorOpen,
-      isABTestOpen, isKeyboardShortcutsOpen, sessions]);
+      isABTestOpen, isKeyboardShortcutsOpen, sessions, isLoading, handleGenerateVariations]);
 
   // Handle Image Click and Site Navigation Messages from Iframe
   useEffect(() => {
@@ -2333,6 +2351,7 @@ Return ONLY RAW HTML.
 
             {/* Refine Input - appears when artifact is focused */}
             <RefineInput
+                ref={refineInputRef}
                 isVisible={focusedArtifactIndex !== null && !isLoading}
                 isRefining={isRefining}
                 onRefine={handleRefine}
