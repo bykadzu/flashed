@@ -204,7 +204,7 @@ function App() {
   // Site Mode State
   const [siteMode, setSiteMode] = useState(false);
   const [pageStructure, setPageStructure] = useState<string>('');
-  const [currentSitePageId, setCurrentSitePageId] = useState<string>('');
+  const [_currentSitePageId, setCurrentSitePageId] = useState<string>('');
   
   // Template Library State
   const [isTemplateLibraryOpen, setIsTemplateLibraryOpen] = useState(false);
