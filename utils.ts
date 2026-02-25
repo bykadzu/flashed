@@ -253,3 +253,61 @@ export async function getCroppedImg(
   finalCtx.putImageData(data, 0, 0);
   return finalCanvas.toDataURL('image/jpeg');
 }
+
+/**
+ * Safe localStorage get with JSON parsing
+ */
+export function storageGet<T>(key: string, defaultValue: T): T {
+  try {
+    const item = localStorage.getItem(key);
+    return item ? JSON.parse(item) : defaultValue;
+  } catch {
+    return defaultValue;
+  }
+}
+
+/**
+ * Safe localStorage set with JSON stringify
+ */
+export function storageSet<T>(key: string, value: T): boolean {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Safe localStorage remove
+ */
+export function storageRemove(key: string): boolean {
+  try {
+    localStorage.removeItem(key);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Safe JSON parse with fallback
+ */
+export function safeJsonParse<T>(json: string, fallback: T): T {
+  try {
+    return JSON.parse(json);
+  } catch {
+    return fallback;
+  }
+}
+
+/**
+ * Generate a UUID v4
+ */
+export function uuidv4(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
