@@ -321,13 +321,16 @@ export function uuidv4(): string {
  */
 export function formatCurrency(
   amount: number,
-  currency = 'USD',
-  locale = 'en-US'
+  currency: string = 'USD',
+  locale: string = 'en-US'
 ): string {
-  return new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
-  }).format(amount);
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency,
+    }).format(amount);
+  } catch (error) {
+    // Fallback for invalid locale/currency
+    return `${currency} ${amount.toFixed(2)}`;
+  }
 }
