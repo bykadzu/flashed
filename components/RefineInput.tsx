@@ -2,7 +2,7 @@
  * RefineInput - Conversational refinement for artifacts
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { ArrowUpIcon, ThinkingIcon } from './Icons';
 
 interface RefineInputProps {
@@ -12,9 +12,22 @@ interface RefineInputProps {
     placeholder?: string;
 }
 
-export default function RefineInput({ isVisible, isRefining, onRefine, placeholder }: RefineInputProps) {
+export interface RefineInputHandle {
+    focusInput: () => void;
+}
+
+const RefineInput = forwardRef<RefineInputHandle, RefineInputProps>(function RefineInput(
+    { isVisible, isRefining, onRefine, placeholder },
+    ref
+) {
     const [value, setValue] = useState('');
     const inputRef = useRef<HTMLInputElement>(null);
+
+    useImperativeHandle(ref, () => ({
+        focusInput: () => {
+            inputRef.current?.focus();
+        }
+    }));
     
     useEffect(() => {
         if (isVisible && !isRefining && inputRef.current) {
@@ -70,4 +83,6 @@ export default function RefineInput({ isVisible, isRefining, onRefine, placehold
             
         </div>
     );
-}
+});
+
+export default RefineInput;
