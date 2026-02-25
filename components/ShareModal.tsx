@@ -20,7 +20,6 @@ export default function ShareModal({ isOpen, onClose, artifact, prompt }: ShareM
     const [isGenerating, setIsGenerating] = useState(false);
     const [copied, setCopied] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [_expiresIn, _setExpiresIn] = useState<string>('24h');
     
     useEffect(() => {
         if (isOpen) {
