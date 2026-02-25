@@ -2,7 +2,10 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
-*/
+ * 
+ * Flashed Utility Functions
+ * Common helpers for DOM manipulation, formatting, and data processing
+ */
 
 import { nanoid } from 'nanoid';
 
