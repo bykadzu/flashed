@@ -33,15 +33,14 @@ export default function ShareModal({ isOpen, onClose, artifact, prompt }: ShareM
         setIsGenerating(true);
         setError(null);
         
+        // Prepare HTML with basic SEO (deterministic, computed once)
+        const seo: SEOSettings = {
+            title: prompt.slice(0, 60),
+            description: `Preview: ${prompt}`,
+        };
+        const preparedHtml = prepareHtmlForPublishing(artifact.html, seo);
+        
         try {
-            // Prepare HTML with basic SEO
-            const seo: SEOSettings = {
-                title: prompt.slice(0, 60),
-                description: `Preview: ${prompt}`,
-            };
-            
-            const preparedHtml = prepareHtmlForPublishing(artifact.html, seo);
-            
             if (supabase) {
                 // Upload to Supabase Storage as a preview
                 const previewId = `preview_${generateShortId()}`;
@@ -73,19 +72,14 @@ export default function ShareModal({ isOpen, onClose, artifact, prompt }: ShareM
                 const blob = new Blob([preparedHtml], { type: 'text/html' });
                 const blobUrl = URL.createObjectURL(blob);
                 setPreviewUrl(blobUrl);
-                setError('Note: This preview link only works on your device. Configure Supabase for shareable links.');
+                setError('Note: This preview link only works on your device. Configure Supabase storage for shareable links.');
             }
         } catch {
             // Final fallback: blob URL
-            const seo: SEOSettings = {
-                title: prompt.slice(0, 60),
-                description: `Preview: ${prompt}`,
-            };
-            const preparedHtml = prepareHtmlForPublishing(artifact.html, seo);
             const blob = new Blob([preparedHtml], { type: 'text/html' });
             const blobUrl = URL.createObjectURL(blob);
             setPreviewUrl(blobUrl);
-            setError('Preview link only works on your device. Configure Supabase storage for shareable links.');
+            setError('Note: This preview link only works on your device. Configure Supabase storage for shareable links.');
         } finally {
             setIsGenerating(false);
         }
