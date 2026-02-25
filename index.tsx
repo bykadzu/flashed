@@ -161,7 +161,7 @@ function App() {
   const userId = user?.id;
 
   // Toast notifications
-  const { toasts, dismissToast, showSuccess, showError, showWarning } = useToast();
+  const { toasts, dismissToast, showSuccess, showError } = useToast();
 
   const [sessions, setSessions] = useState<Session[]>([]);
   const [currentSessionIndex, setCurrentSessionIndex] = useState<number>(-1);
