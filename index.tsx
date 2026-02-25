@@ -504,7 +504,7 @@ function App() {
       return () => document.removeEventListener('keydown', handleGlobalKeyDown);
   }, [focusedArtifactIndex, currentSessionIndex, undoRedo.canUndo, undoRedo.canRedo,
       isExportModalOpen, isVersionHistoryOpen, isSEOAnalyzerOpen, isComponentExtractorOpen,
-      isABTestOpen, isKeyboardShortcutsOpen, sessions, handleGenerateVariations, isLoading]);
+      isABTestOpen, isKeyboardShortcutsOpen, sessions, isLoading]);
 
   // Handle Image Click and Site Navigation Messages from Iframe
   useEffect(() => {
