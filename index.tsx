@@ -471,6 +471,19 @@ function App() {
               return;
           }
 
+          // Ctrl+C: Copy artifact HTML to clipboard (when artifact is selected)
+          if (mod && e.key === 'c' && focusedArtifactIndex !== null) {
+              e.preventDefault();
+              const activeSession = sessions[currentSessionIndex];
+              if (activeSession && activeSession.artifacts[focusedArtifactIndex]) {
+                  const html = activeSession.artifacts[focusedArtifactIndex].html;
+                  navigator.clipboard.writeText(html).then(() => {
+                      // Could show a toast notification here
+                  }).catch(err => console.warn('Failed to copy HTML', err));
+              }
+              return;
+          }
+
           // Arrow keys for navigation when not in input
           if (e.key === 'ArrowLeft') { prevItem(); return; }
           if (e.key === 'ArrowRight') { nextItem(); return; }
