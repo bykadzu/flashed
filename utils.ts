@@ -311,3 +311,23 @@ export function uuidv4(): string {
     return v.toString(16);
   });
 }
+
+/**
+ * Format a number as currency
+ * @param amount - Number to format
+ * @param currency - Currency code (default: USD)
+ * @param locale - Locale for formatting (default: en-US)
+ * @returns Formatted currency string
+ */
+export function formatCurrency(
+  amount: number,
+  currency = 'USD',
+  locale = 'en-US'
+): string {
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  }).format(amount);
+}
