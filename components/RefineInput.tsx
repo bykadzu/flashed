@@ -27,11 +27,10 @@ const RefineInput = forwardRef<RefineInputHandle, RefineInputProps>(function Ref
         focusInput: () => {
             inputRef.current?.focus();
         }
-    }));
+    }), []);
     
     useEffect(() => {
         if (isVisible && !isRefining && inputRef.current) {
-            // Small delay to allow animation to start
             setTimeout(() => inputRef.current?.focus(), 300);
         }
     }, [isVisible, isRefining]);
@@ -44,7 +43,8 @@ const RefineInput = forwardRef<RefineInputHandle, RefineInputProps>(function Ref
     };
     
     const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && !isRefining) {
+        // Ctrl+Enter or Cmd+Enter to submit
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
             e.preventDefault();
             handleSubmit();
         }
@@ -80,7 +80,6 @@ const RefineInput = forwardRef<RefineInputHandle, RefineInputProps>(function Ref
                     </>
                 )}
             </div>
-            
         </div>
     );
 });
