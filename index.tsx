@@ -74,28 +74,6 @@ function isValidHtml(html: string): boolean {
     return lower.includes('<html') || lower.includes('<!doctype') || lower.includes('<body');
 }
 
-/**
- * Retry helper with exponential backoff
- */
-async function withRetry<T>(
-    fn: () => Promise<T>,
-    maxRetries: number = 2,
-    baseDelay: number = 500
-): Promise<T> {
-    let lastError: unknown;
-    for (let i = 0; i <= maxRetries; i++) {
-        try {
-            return await fn();
-        } catch (e) {
-            lastError = e;
-            if (i < maxRetries) {
-                await new Promise(r => setTimeout(r, baseDelay * Math.pow(2, i)));
-            }
-        }
-    }
-    throw lastError;
-}
-
 // ===== END UTILITIES =====
 
 import DottedGlowBackground from './components/DottedGlowBackground';
