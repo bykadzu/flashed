@@ -91,9 +91,9 @@ export async function withRetry<T>(
 
       if (onRetry) {
         onRetry(attempt + 1, lastError, delayMs);
+      } else {
+        console.warn(`Retry attempt ${attempt + 1}/${maxRetries} after ${delayMs}ms:`, lastError.message);
       }
-
-      console.warn(`Retry attempt ${attempt + 1}/${maxRetries} after ${delayMs}ms:`, lastError.message);
 
       await new Promise(resolve => setTimeout(resolve, delayMs));
     }
