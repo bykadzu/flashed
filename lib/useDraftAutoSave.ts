@@ -58,6 +58,7 @@ function readDraftFromStorage(): Draft | null {
 export function useDraftAutoSave(): UseDraftAutoSaveResult {
     const [hasDraft, setHasDraft] = useState<boolean>(false);
     const pendingDraftRef = useRef<Omit<Draft, 'id' | 'timestamp'> | null>(null);
+    const lastSavedRef = useRef<string>(''); // Track last saved content to avoid redundant saves
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     // Check for existing draft on mount and set hasDraft for recovery prompt
@@ -81,6 +82,8 @@ export function useDraftAutoSave(): UseDraftAutoSaveResult {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(fullDraft));
             setHasDraft(true);
             pendingDraftRef.current = draft;
+            // Track content hash to detect changes
+            lastSavedRef.current = JSON.stringify(draft);
         } catch {
             // localStorage may be full or unavailable; fail silently
         }
@@ -104,12 +107,18 @@ export function useDraftAutoSave(): UseDraftAutoSaveResult {
         }
         setHasDraft(false);
         pendingDraftRef.current = null;
+        lastSavedRef.current = '';
     }, []);
 
     // Set up debounced auto-save interval
     useEffect(() => {
         timerRef.current = setInterval(() => {
             if (pendingDraftRef.current) {
+                const currentContent = JSON.stringify(pendingDraftRef.current);
+                // Skip if content hasn't changed since last save
+                if (currentContent === lastSavedRef.current) {
+                    return;
+                }
                 try {
                     const fullDraft: Draft = {
                         ...pendingDraftRef.current,
@@ -118,6 +127,7 @@ export function useDraftAutoSave(): UseDraftAutoSaveResult {
                     };
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(fullDraft));
                     setHasDraft(true);
+                    lastSavedRef.current = currentContent;
                 } catch {
                     // localStorage may be full or unavailable; fail silently
                 }
