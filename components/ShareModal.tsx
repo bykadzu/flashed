@@ -179,6 +179,12 @@ export default function ShareModal({ isOpen, onClose, artifact, prompt }: ShareM
                             >
                                 Copy Full HTML to Clipboard
                             </button>
+                            
+                            {error && (
+                                <div style={{ marginTop: '12px', padding: '12px', background: 'rgba(255, 193, 7, 0.1)', border: '1px solid rgba(255, 193, 7, 0.3)', borderRadius: '8px', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>
+                                    {error}
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <div className="published-success">

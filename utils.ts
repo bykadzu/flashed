@@ -329,7 +329,7 @@ export function formatCurrency(
       style: 'currency',
       currency,
     }).format(amount);
-  } catch (error) {
+  } catch {
     // Fallback for invalid locale/currency
     return `${currency} ${amount.toFixed(2)}`;
   }
