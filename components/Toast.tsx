@@ -100,10 +100,12 @@ export function useToast() {
     const showError = (message: string, duration?: number) => addToast('error', message, duration || TOAST_DURATION_ERROR);
     const showWarning = (message: string, duration?: number) => addToast('warning', message, duration);
     const showInfo = (message: string, duration?: number) => addToast('info', message, duration);
+    const clearAll = () => setToasts([]);
 
     return {
         toasts,
         dismissToast,
+        clearAll,
         showSuccess,
         showError,
         showWarning,
