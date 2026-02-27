@@ -7,12 +7,10 @@
  * Common helpers for DOM manipulation, formatting, and data processing
  */
 
-import { nanoid } from 'nanoid';
-
 /**
- * Generate a unique ID using cryptographically secure nanoid
+ * Generate a unique ID using cryptographically secure random UUID
  */
-export const generateId = () => nanoid(12);
+export const generateId = () => crypto.randomUUID();
 
 /**
  * Format a timestamp (number or Date) to a human-readable string

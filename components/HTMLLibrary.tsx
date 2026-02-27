@@ -3,7 +3,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { nanoid } from 'nanoid';
+
 import { HTMLItem, LibrarySortOption } from '../types';
 import * as library from '../lib/htmlLibrary';
 import { compileJSX } from '../lib/jsxCompiler';
@@ -130,7 +130,7 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem, onOpenSiteI
 
     const hasBatchItems = items.some(item => item.batchId);
 
-    const generateBatchId = () => `${nanoid(9)}-${Date.now().toString(36)}`;
+    const generateBatchId = () => `${crypto.randomUUID()}-${Date.now().toString(36)}`;
 
     const isJSXFile = (filename: string) => /\.(jsx|tsx|js|ts)$/i.test(filename);
     const isHTMLFile = (filename: string) => /\.(html|htm)$/i.test(filename);

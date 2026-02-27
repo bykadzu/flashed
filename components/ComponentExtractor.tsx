@@ -8,7 +8,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { nanoid } from 'nanoid';
+
 import { ExtractedComponent } from '../types';
 import { XIcon, DownloadIcon, CodeIcon, LayersIcon, CheckIcon } from './Icons';
 
@@ -239,7 +239,7 @@ function extractComponents(html: string): ExtractedComponent[] {
             const css = extractCSSForElement(allCSS, elementHTML);
 
             components.push({
-                id: nanoid(),
+                id: crypto.randomUUID(),
                 name: generateComponentName(type, count),
                 html: elementHTML,
                 css,
@@ -282,7 +282,7 @@ function extractComponents(html: string): ExtractedComponent[] {
                 const css = extractCSSForElement(allCSS, elementHTML);
 
                 components.push({
-                    id: nanoid(),
+                    id: crypto.randomUUID(),
                     name: generateComponentName(type, count),
                     html: elementHTML,
                     css,

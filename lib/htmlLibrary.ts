@@ -2,7 +2,7 @@
  * HTML Library storage utilities
  */
 
-import { nanoid } from 'nanoid';
+
 import { HTMLItem } from '../types';
 
 const STORAGE_KEY = 'flashed_library_v1';
@@ -100,7 +100,7 @@ export const createLibraryItem = (
 ): HTMLItem => {
     const metadata = extractMetadata(html);
     return {
-        id: nanoid(),
+        id: crypto.randomUUID(),
         title: title || metadata.title || prompt.slice(0, 50),
         description: metadata.description || prompt,
         content: html,

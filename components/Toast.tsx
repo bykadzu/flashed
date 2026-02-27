@@ -3,7 +3,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { nanoid } from 'nanoid';
+
 import { TOAST_DURATION_DEFAULT, TOAST_DURATION_ERROR } from '../constants';
 
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
@@ -87,7 +87,7 @@ export function useToast() {
     const [toasts, setToasts] = useState<ToastMessage[]>([]);
 
     const addToast = (type: ToastType, message: string, duration?: number) => {
-        const id = nanoid(9);
+        const id = crypto.randomUUID();
         setToasts(prev => [...prev, { id, type, message, duration }]);
         return id;
     };

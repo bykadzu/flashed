@@ -3,7 +3,6 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import { nanoid } from 'nanoid';
 import type { Artifact, SEOSettings, FormSettings, PublishedPage } from '../types';
 
 // Initialize Supabase client
@@ -23,8 +22,8 @@ export const isSupabaseConfigured = () => {
     return !!supabase;
 };
 
-// Generate a short ID for URLs
-export const generateShortId = () => nanoid(8);
+// Generate a short ID for URLs using crypto
+export const generateShortId = () => crypto.randomUUID().replace(/-/g, '').slice(0, 8);
 
 // Inject SEO meta tags and form handling into HTML
 export const prepareHtmlForPublishing = (
