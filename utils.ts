@@ -154,6 +154,37 @@ export function isValidEmail(email: string): boolean {
 }
 
 /**
+ * Validates a URL format
+ * @param url - URL string to validate
+ * @returns true if valid URL
+ */
+export function isValidUrl(url: string): boolean {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Checks if a URL is from a trusted origin (prevent open redirects)
+ * @param url - URL to check
+ * @param trustedOrigins - Array of trusted origins (default: current window origin)
+ * @returns true if URL is safe
+ */
+export function isTrustedUrl(url: string, trustedOrigins: string[] = []): boolean {
+  try {
+    const urlObj = new URL(url);
+    const defaultTrusted = typeof window !== 'undefined' ? [window.location.origin] : [];
+    const allTrusted = [...defaultTrusted, ...trustedOrigins];
+    return allTrusted.includes(urlObj.origin);
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Generates a random string of specified length
  */
 export function randomString(length: number): string {
