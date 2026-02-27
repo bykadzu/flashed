@@ -6,6 +6,7 @@ import { nanoid } from 'nanoid';
 import { HTMLItem } from '../types';
 
 const STORAGE_KEY = 'flashed_library_v1';
+const MAX_LIBRARY_ITEMS = 50;
 
 export const getLibrary = (): HTMLItem[] => {
     try {
@@ -20,9 +21,11 @@ export const getLibrary = (): HTMLItem[] => {
 export const saveItem = (item: HTMLItem): HTMLItem[] => {
     const current = getLibrary();
     const updated = [item, ...current];
+    // Enforce quota limit to prevent localStorage exceeded errors
+    const limited = updated.slice(0, MAX_LIBRARY_ITEMS);
     try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-        return updated;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(limited));
+        return limited;
     } catch (e) {
         console.error("Storage quota exceeded", e);
         throw new Error("Storage quota exceeded. Try deleting old items.");
@@ -30,26 +33,26 @@ export const saveItem = (item: HTMLItem): HTMLItem[] => {
 };
 
 export const deleteItem = (id: string): HTMLItem[] => {
+    const current = getLibrary();
+    const updated = current.filter(i => i.id !== id);
     try {
-        const current = getLibrary();
-        const updated = current.filter(i => i.id !== id);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
         return updated;
     } catch (e) {
         console.error("Failed to delete item", e);
-        return [];
+        return current; // Return current state on error instead of empty array
     }
 };
 
 export const updateItem = (id: string, updates: Partial<HTMLItem>): HTMLItem[] => {
+    const current = getLibrary();
+    const updated = current.map(item => item.id === id ? { ...item, ...updates } : item);
     try {
-        const current = getLibrary();
-        const updated = current.map(item => item.id === id ? { ...item, ...updates } : item);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
         return updated;
     } catch (e) {
         console.error("Failed to update item", e);
-        return [];
+        return current; // Return current state on error instead of empty array
     }
 };
 
