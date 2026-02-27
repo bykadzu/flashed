@@ -105,11 +105,11 @@ export default function KeyboardShortcutsHelp({ isOpen, onClose }: KeyboardShort
     }));
 
     return (
-        <div className="shortcuts-modal-overlay" onClick={onClose}>
-            <div className="shortcuts-modal" onClick={e => e.stopPropagation()}>
+        <div className="shortcuts-modal-overlay" onClick={onClose} role="presentation">
+            <div className="shortcuts-modal" role="dialog" aria-modal="true" aria-labelledby="shortcuts-title" onClick={e => e.stopPropagation()}>
                 <div className="shortcuts-modal-header">
-                    <h2>Keyboard Shortcuts</h2>
-                    <button className="shortcuts-close-btn" onClick={onClose}>
+                    <h2 id="shortcuts-title">Keyboard Shortcuts</h2>
+                    <button className="shortcuts-close-btn" onClick={onClose} aria-label="Close">
                         <XIcon />
                     </button>
                 </div>
