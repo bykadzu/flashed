@@ -6,6 +6,7 @@ import { nanoid } from 'nanoid';
 import { HTMLItem } from '../types';
 
 const STORAGE_KEY = 'flashed_library_v1';
+const MAX_LIBRARY_ITEMS = 50;
 
 export const getLibrary = (): HTMLItem[] => {
     try {
@@ -19,10 +20,11 @@ export const getLibrary = (): HTMLItem[] => {
 
 export const saveItem = (item: HTMLItem): HTMLItem[] => {
     const current = getLibrary();
-    const updated = [item, ...current];
+    // Limit to last MAX_LIBRARY_ITEMS to avoid quota issues
+    const limited = [item, ...current].slice(0, MAX_LIBRARY_ITEMS);
     try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-        return updated;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(limited));
+        return limited;
     } catch (e) {
         console.error("Storage quota exceeded", e);
         throw new Error("Storage quota exceeded. Try deleting old items.");
@@ -37,7 +39,8 @@ export const deleteItem = (id: string): HTMLItem[] => {
         return updated;
     } catch (e) {
         console.error("Failed to delete item", e);
-        return [];
+        // Return empty on error to avoid inconsistent state
+        return getLibrary();
     }
 };
 
@@ -49,7 +52,8 @@ export const updateItem = (id: string, updates: Partial<HTMLItem>): HTMLItem[] =
         return updated;
     } catch (e) {
         console.error("Failed to update item", e);
-        return [];
+        // Return original on error
+        return getLibrary();
     }
 };
 
