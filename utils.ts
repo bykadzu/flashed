@@ -9,10 +9,12 @@
 
 import { nanoid } from 'nanoid';
 
+// Use crypto.randomUUID() - available in modern browsers in secure contexts (HTTPS)
+
 /**
  * Generate a unique ID using cryptographically secure nanoid
  */
-export const generateId = () => nanoid(12);
+export const generateId = (): string => nanoid(12);
 
 /**
  * Format a timestamp (number or Date) to a human-readable string
@@ -68,6 +70,10 @@ export function parseDataUrl(dataUrl: string): { mimeType: string; data: string 
     return { mimeType, data };
 }
 
+/**
+ * Load an image from a URL and return it as an HTMLImageElement
+ * Useful for preloading images before displaying them
+ */
 export const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
     const image = new Image()
@@ -302,10 +308,19 @@ export function safeJsonParse<T>(json: string, fallback: T): T {
 }
 
 /**
- * Generate a UUID v4 using secure crypto API
+ * Generate a UUID v4 using the Web Crypto API
  */
 export function uuidv4(): string {
-    return crypto.randomUUID();
+    // crypto.randomUUID() is available in secure contexts (HTTPS)
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+    }
+    // Fallback: RFC4122 v4 compliant UUID using Math.random
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
 }
 
 /**
