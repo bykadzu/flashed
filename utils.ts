@@ -70,6 +70,10 @@ export function parseDataUrl(dataUrl: string): { mimeType: string; data: string 
     return { mimeType, data };
 }
 
+/**
+ * Load an image from a URL and return it as an HTMLImageElement
+ * Useful for preloading images before displaying them
+ */
 export const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
     const image = new Image()
