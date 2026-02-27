@@ -471,7 +471,6 @@ function App() {
           // Arrow keys for navigation when not in input
           if (e.key === 'ArrowLeft') { prevItem(); return; }
           if (e.key === 'ArrowRight') { nextItem(); return; }
-
           // Ctrl+R: Focus refine input when artifact is selected
           if (mod && e.key === 'r' && focusedArtifactIndex !== null) {
               e.preventDefault();
