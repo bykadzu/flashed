@@ -176,8 +176,8 @@ export const prepareHtmlForPublishing = (
                             referrer: document.referrer,
                             userAgent: navigator.userAgent
                         })
-                    }).catch(() => {});
-                } catch(e) {}
+                    }).catch(function(err) { console.debug('Analytics track failed:', err); });
+                } catch(e) { console.debug('Analytics init failed:', e); }
             })();
         `;
         doc.body.appendChild(analyticsScript);
