@@ -4,10 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 
-// Locale for date/time formatting (uses browser default if not set)
-export const LOCALE = 'en-US';
-
-// UI Timing Constants (in milliseconds)
+// Content Limits
 export const TOAST_DURATION_DEFAULT = 3000;
 export const TOAST_DURATION_ERROR = 6000;
 export const COPY_FEEDBACK_DURATION = 2000;
