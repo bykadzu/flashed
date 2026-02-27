@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 
-// Content Limits
+// UI Timing
 export const TOAST_DURATION_DEFAULT = 3000;
 export const TOAST_DURATION_ERROR = 6000;
 export const COPY_FEEDBACK_DURATION = 2000;
