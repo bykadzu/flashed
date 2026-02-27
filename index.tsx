@@ -310,7 +310,9 @@ function App() {
   // Save brand kits to LocalStorage
   useEffect(() => {
       try {
-          localStorage.setItem('flash_ui_brand_kits', JSON.stringify(brandKits));
+          // Limit to last 20 brand kits to avoid quota issues
+          const toSave = brandKits.slice(-20);
+          localStorage.setItem('flash_ui_brand_kits', JSON.stringify(toSave));
       } catch (e) {
           console.warn("Failed to save brand kits", e);
       }
@@ -319,7 +321,9 @@ function App() {
   // Save projects to LocalStorage
   useEffect(() => {
       try {
-          localStorage.setItem('flash_ui_projects', JSON.stringify(projects));
+          // Limit to last 30 projects to avoid quota issues
+          const toSave = projects.slice(-30);
+          localStorage.setItem('flash_ui_projects', JSON.stringify(toSave));
       } catch (e) {
           console.warn("Failed to save projects", e);
       }
