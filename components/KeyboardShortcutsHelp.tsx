@@ -24,17 +24,9 @@ const SHORTCUTS: KeyboardShortcut[] = [
     { key: 'Escape', modifiers: [], action: 'close', description: 'Close modals / go back', category: 'navigation' },
     { key: 'ArrowLeft', modifiers: [], action: 'prevVariant', description: 'Previous variant', category: 'navigation' },
     { key: 'ArrowRight', modifiers: [], action: 'nextVariant', description: 'Next variant', category: 'navigation' },
-    { key: '1', modifiers: [], action: 'selectVariant1', description: 'Select variant 1', category: 'navigation' },
-    { key: '2', modifiers: [], action: 'selectVariant2', description: 'Select variant 2', category: 'navigation' },
-    { key: '3', modifiers: [], action: 'selectVariant3', description: 'Select variant 3', category: 'navigation' },
-    { key: '4', modifiers: [], action: 'selectVariant4', description: 'Select variant 4', category: 'navigation' },
-    { key: '5', modifiers: [], action: 'selectVariant5', description: 'Select variant 5', category: 'navigation' },
-    { key: '6', modifiers: [], action: 'selectVariant6', description: 'Select variant 6', category: 'navigation' },
-    { key: '7', modifiers: [], action: 'selectVariant7', description: 'Select variant 7', category: 'navigation' },
-    { key: '8', modifiers: [], action: 'selectVariant8', description: 'Select variant 8', category: 'navigation' },
-    { key: '9', modifiers: [], action: 'selectVariant9', description: 'Select variant 9', category: 'navigation' },
 
     // Actions
+    { key: '?', modifiers: ['ctrl'], action: 'help', description: 'Show keyboard shortcuts', category: 'actions' },
     { key: 'S', modifiers: ['ctrl'], action: 'save', description: 'Save to library', category: 'actions' },
     { key: 'E', modifiers: ['ctrl'], action: 'export', description: 'Export', category: 'actions' },
     { key: 'P', modifiers: ['ctrl'], action: 'publish', description: 'Publish', category: 'actions' },
@@ -42,13 +34,12 @@ const SHORTCUTS: KeyboardShortcut[] = [
 
     // Generation
     { key: 'Enter', modifiers: [], action: 'generate', description: 'Generate', category: 'generation' },
-    { key: 'Enter', modifiers: ['ctrl'], action: 'generateMore', description: 'Generate with more variants', category: 'generation' },
-    { key: 'R', modifiers: ['ctrl'], action: 'refine', description: 'Refine', category: 'generation' },
+    { key: 'Enter', modifiers: ['ctrl'], action: 'generateMore', description: 'Generate more variants', category: 'generation' },
+    { key: 'R', modifiers: ['ctrl'], action: 'refine', description: 'Focus refine input', category: 'generation' },
 
     // Editing
     { key: 'Z', modifiers: ['ctrl'], action: 'undo', description: 'Undo', category: 'editing' },
     { key: 'Z', modifiers: ['ctrl', 'shift'], action: 'redo', description: 'Redo', category: 'editing' },
-    { key: 'C', modifiers: ['ctrl'], action: 'copyHtml', description: 'Copy HTML', category: 'editing' },
 ];
 
 const CATEGORY_ORDER: KeyboardShortcut['category'][] = ['navigation', 'actions', 'generation', 'editing'];
