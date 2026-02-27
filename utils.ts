@@ -9,10 +9,12 @@
 
 import { nanoid } from 'nanoid';
 
+// Use crypto.randomUUID() - available in modern browsers in secure contexts (HTTPS)
+
 /**
  * Generate a unique ID using cryptographically secure nanoid
  */
-export const generateId = () => nanoid(12);
+export const generateId = (): string => nanoid(12);
 
 /**
  * Format a timestamp (number or Date) to a human-readable string
@@ -302,10 +304,15 @@ export function safeJsonParse<T>(json: string, fallback: T): T {
 }
 
 /**
- * Generate a UUID v4 using secure crypto API
+ * Generate a UUID v4 using the Web Crypto API
  */
 export function uuidv4(): string {
-    return crypto.randomUUID();
+    // crypto.randomUUID() is available in secure contexts (HTTPS)
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+    }
+    // Fallback: nanoid with UUID-like format
+    return nanoid(22);
 }
 
 /**
