@@ -6,6 +6,28 @@ import { nanoid } from 'nanoid';
 import { HTMLItem } from '../types';
 
 const STORAGE_KEY = 'flashed_library_v1';
+const MAX_STORAGE_MB = 5; // Approximate localStorage limit
+
+/**
+ * Estimate available localStorage space in bytes
+ */
+export const getAvailableStorage = (): number => {
+    try {
+        const current = getLibrary();
+        const currentSize = current.reduce((sum, item) => sum + (item.size || 0), 0);
+        const maxBytes = MAX_STORAGE_MB * 1024 * 1024;
+        return Math.max(0, maxBytes - currentSize);
+    } catch {
+        return 0;
+    }
+};
+
+/**
+ * Check if there's enough space to save an item
+ */
+export const hasStorageSpace = (itemSize: number): boolean => {
+    return getAvailableStorage() > itemSize * 1.2; // 20% buffer
+};
 
 export const getLibrary = (): HTMLItem[] => {
     try {
@@ -21,6 +43,11 @@ export const saveItem = (item: HTMLItem): HTMLItem[] => {
     const current = getLibrary();
     const updated = [item, ...current];
     try {
+        // Pre-check storage space
+        const itemSize = item.size || new Blob([item.content]).size;
+        if (!hasStorageSpace(itemSize)) {
+            throw new Error("Storage quota exceeded. Try deleting old items.");
+        }
         localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
         return updated;
     } catch (e) {
