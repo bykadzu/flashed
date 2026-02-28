@@ -119,6 +119,7 @@ function analyzeHTML(html: string): SEOAnalysis {
     const hasOgTitle = !!doc.querySelector('meta[property="og:title"]');
     const hasOgDesc = !!doc.querySelector('meta[property="og:description"]');
     const hasOgImage = !!doc.querySelector('meta[property="og:image"]');
+    const hasOgUrl = !!doc.querySelector('meta[property="og:url"]');
     const hasOgTags = hasOgTitle && hasOgDesc;
 
     // Twitter Card tags
@@ -147,6 +148,15 @@ function analyzeHTML(html: string): SEOAnalysis {
             category: 'Meta Tags',
             message: 'Missing Open Graph image tag. Social media shares will not display a preview image.',
             fix: 'add-og-image',
+        });
+    }
+
+    if (!hasOgUrl) {
+        issues.push({
+            type: 'info',
+            category: 'Meta Tags',
+            message: 'Missing og:url tag. Recommended for proper link preview consistency.',
+            fix: 'add-og-url',
         });
     }
 
@@ -379,6 +389,7 @@ function analyzeHTML(html: string): SEOAnalysis {
             hasOgTitle,
             hasOgDesc,
             hasOgImage,
+            hasOgUrl,
             hasTwitterCard,
             hasCanonical,
             hasFavicon,
@@ -504,6 +515,20 @@ function applyAutoFixes(html: string, analysis: SEOAnalysis): string {
                     const meta = doc.createElement('meta');
                     meta.setAttribute('property', 'og:image');
                     meta.setAttribute('content', imgSrc || 'https://placehold.co/1200x630/png?text=Page+Preview');
+                    const head = doc.head || doc.createElement('head');
+                    if (!doc.head) doc.documentElement.prepend(head);
+                    head.appendChild(meta);
+                }
+                break;
+            }
+            case 'add-og-url': {
+                if (!doc.querySelector('meta[property="og:url"]')) {
+                    // Use current page URL or a placeholder
+                    const url = doc.querySelector('meta[property="og:url"]')?.getAttribute('content') || 
+                                window?.location?.href || 'https://example.com';
+                    const meta = doc.createElement('meta');
+                    meta.setAttribute('property', 'og:url');
+                    meta.setAttribute('content', url);
                     const head = doc.head || doc.createElement('head');
                     if (!doc.head) doc.documentElement.prepend(head);
                     head.appendChild(meta);
