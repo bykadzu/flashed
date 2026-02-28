@@ -9,10 +9,12 @@
 
 import { nanoid } from 'nanoid';
 
+// Use crypto.randomUUID() - available in modern browsers in secure contexts (HTTPS)
+
 /**
  * Generate a unique ID using cryptographically secure nanoid
  */
-export const generateId = () => nanoid(12);
+export const generateId = (): string => nanoid(12);
 
 /**
  * Format a timestamp (number or Date) to a human-readable string
@@ -68,6 +70,10 @@ export function parseDataUrl(dataUrl: string): { mimeType: string; data: string 
     return { mimeType, data };
 }
 
+/**
+ * Load an image from a URL and return it as an HTMLImageElement
+ * Useful for preloading images before displaying them
+ */
 export const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
     const image = new Image()
@@ -145,6 +151,37 @@ export function clamp(value: number, min: number, max: number): number {
 export function isValidEmail(email: string): boolean {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
+}
+
+/**
+ * Validates a URL format
+ * @param url - URL string to validate
+ * @returns true if valid URL
+ */
+export function isValidUrl(url: string): boolean {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Checks if a URL is from a trusted origin (prevent open redirects)
+ * @param url - URL to check
+ * @param trustedOrigins - Array of trusted origins (default: current window origin)
+ * @returns true if URL is safe
+ */
+export function isTrustedUrl(url: string, trustedOrigins: string[] = []): boolean {
+  try {
+    const urlObj = new URL(url);
+    const defaultTrusted = typeof window !== 'undefined' ? [window.location.origin] : [];
+    const allTrusted = [...defaultTrusted, ...trustedOrigins];
+    return allTrusted.includes(urlObj.origin);
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -302,10 +339,19 @@ export function safeJsonParse<T>(json: string, fallback: T): T {
 }
 
 /**
- * Generate a UUID v4 using secure crypto API
+ * Generate a UUID v4 using the Web Crypto API
  */
 export function uuidv4(): string {
-    return crypto.randomUUID();
+    // crypto.randomUUID() is available in secure contexts (HTTPS)
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+    }
+    // Fallback: RFC4122 v4 compliant UUID using Math.random
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
 }
 
 /**
@@ -329,4 +375,46 @@ export function formatCurrency(
     // Fallback for invalid locale/currency
     return `${currency} ${amount.toFixed(2)}`;
   }
+}
+
+/**
+ * Formats a timestamp as a relative time string (e.g., "2 hours ago", "yesterday")
+ * @param timestamp - Unix timestamp in milliseconds or Date object
+ * @param locale - Locale for formatting (default: 'en')
+ * @returns Relative time string
+ */
+export function formatRelativeTime(timestamp: number | Date, locale: string = 'en'): string {
+    const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHour = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHour / 24);
+    const diffWeek = Math.floor(diffDay / 7);
+    const diffMonth = Math.floor(diffDay / 30);
+    const diffYear = Math.floor(diffDay / 365);
+
+    // Future dates - show as "in X time"
+    if (diffMs < 0) {
+        const absDiffMin = Math.abs(diffMin);
+        const absDiffHour = Math.abs(diffHour);
+        const absDiffDay = Math.abs(diffDay);
+        
+        if (absDiffMin < 60) return 'in a minute';
+        if (absDiffHour < 24) return `in ${absDiffHour} hour${absDiffHour > 1 ? 's' : ''}`;
+        if (absDiffDay < 7) return `in ${absDiffDay} day${absDiffDay > 1 ? 's' : ''}`;
+        return date.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
+    }
+
+    // Past dates
+    if (diffMin < 1) return 'just now';
+    if (diffMin < 60) return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`;
+    if (diffHour < 24) return `${diffHour} hour${diffHour > 1 ? 's' : ''} ago`;
+    if (diffDay === 1) return 'yesterday';
+    if (diffDay < 7) return `${diffDay} days ago`;
+    if (diffWeek === 1) return 'last week';
+    if (diffMonth < 12) return `${diffMonth} month${diffMonth > 1 ? 's' : ''} ago`;
+    if (diffYear === 1) return 'last year';
+    return `${diffYear} years ago`;
 }

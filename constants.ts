@@ -13,7 +13,7 @@ export const PLACEHOLDER_FETCH_DELAY = 1000;
 export const PLACEHOLDER_CYCLE_INTERVAL = 3000;
 
 // Content Limits
-export const HTML_PREVIEW_MAX_LENGTH = 8000;
+export const HTML_PREVIEW_MAX_LENGTH = 12000;
 
 // Multi-variant generation
 export const GENERATION_BATCH_SIZE = 3;
