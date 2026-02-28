@@ -74,3 +74,23 @@ export const deleteItem = (id: string): HTMLItem[] => {
 export const clearLibrary = (): void => {
     localStorage.removeItem(STORAGE_KEY);
 };
+
+/**
+ * Create a new library item from content
+ */
+export const createLibraryItem = (
+    content: string,
+    description: string,
+    title: string,
+    tags: string[] = []
+): HTMLItem => {
+    return {
+        id: nanoid(),
+        content,
+        description,
+        title,
+        tags,
+        createdAt: Date.now(),
+        size: new Blob([content]).size,
+    };
+};
