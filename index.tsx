@@ -26,7 +26,7 @@ import {
     VARIANT_OPTIONS,
     STYLE_FALLBACKS
 } from './constants';
-import { generateId, parseDataUrl,  formatTimestampCompact } from './utils';
+import { generateId, parseDataUrl, formatTimestampCompact, slugify } from './utils';
 
 // ===== ERROR HANDLING & VALIDATION UTILITIES =====
 
@@ -1321,7 +1321,7 @@ Return ONLY the complete, updated HTML. No explanations or markdown code blocks.
       const sitePages: SitePage[] = sorted.map((item, i) => ({
           id: generateId(),
           name: item.title,
-          slug: i === 0 ? 'home' : item.title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, ''),
+          slug: i === 0 ? 'home' : slugify(item.title),
           html: item.content,
           status: 'complete' as const,
           isHome: i === 0
@@ -1397,7 +1397,7 @@ Return ONLY the complete, updated HTML. No explanations or markdown code blocks.
       const pageName = prompt('Enter page name (e.g., About, Contact, Services):');
       if (!pageName) return;
       
-      const slug = pageName.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+      const slug = pageName ? slugify(pageName) : '';
       const pageId = generateId();
       
       const session = sessions.find(s => s.id === sessionId);
