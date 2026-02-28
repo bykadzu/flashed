@@ -659,6 +659,7 @@ function App() {
 
   // Dynamic placeholder generation on load
   useEffect(() => {
+      let isMounted = true;
       const fetchDynamicPlaceholders = async () => {
           try {
               const apiKey = getApiKey();
@@ -674,7 +675,7 @@ function App() {
               });
               const text = response.text || '[]';
               const jsonMatch = text.match(/\[[\s\S]*\]/);
-              if (jsonMatch) {
+              if (jsonMatch && isMounted) {
                   const newPlaceholders = JSON.parse(jsonMatch[0]);
                   if (Array.isArray(newPlaceholders) && newPlaceholders.length > 0) {
                       const shuffled = newPlaceholders.sort(() => 0.5 - Math.random()).slice(0, 10);
@@ -685,7 +686,11 @@ function App() {
               console.warn("Silently failed to fetch dynamic placeholders", e);
           }
       };
-      setTimeout(fetchDynamicPlaceholders, PLACEHOLDER_FETCH_DELAY);
+      const timeoutId = setTimeout(fetchDynamicPlaceholders, PLACEHOLDER_FETCH_DELAY);
+      return () => {
+          isMounted = false;
+          clearTimeout(timeoutId);
+      };
   }, []);
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {

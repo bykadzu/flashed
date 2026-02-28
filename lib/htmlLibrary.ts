@@ -71,26 +71,15 @@ export const deleteItem = (id: string): HTMLItem[] => {
     }
 };
 
-export const clearLibrary = (): void => {
-    localStorage.removeItem(STORAGE_KEY);
-};
-
-/**
- * Create a new library item from content
- */
-export const createLibraryItem = (
-    content: string,
-    description: string,
-    title: string,
-    tags: string[] = []
-): HTMLItem => {
-    return {
-        id: nanoid(),
-        content,
-        description,
-        title,
-        tags,
-        createdAt: Date.now(),
-        size: new Blob([content]).size,
-    };
+export const updateItem = (id: string, updates: Partial<HTMLItem>): HTMLItem[] => {
+    try {
+        const current = getLibrary();
+        const updated = current.map(item => item.id === id ? { ...item, ...updates } : item);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        return updated;
+    } catch (e) {
+        console.error("Failed to update item", e);
+        // Return original on error
+        return getLibrary();
+    }
 };
