@@ -7,6 +7,28 @@ import { HTMLItem } from '../types';
 
 const STORAGE_KEY = 'flashed_library_v1';
 const MAX_LIBRARY_ITEMS = 50;
+const MAX_STORAGE_MB = 5; // Approximate localStorage limit
+
+/**
+ * Estimate available localStorage space in bytes
+ */
+export const getAvailableStorage = (): number => {
+    try {
+        const current = getLibrary();
+        const currentSize = current.reduce((sum, item) => sum + (item.size || 0), 0);
+        const maxBytes = MAX_STORAGE_MB * 1024 * 1024;
+        return Math.max(0, maxBytes - currentSize);
+    } catch {
+        return 0;
+    }
+};
+
+/**
+ * Check if there's enough space to save an item
+ */
+export const hasStorageSpace = (itemSize: number): boolean => {
+    return getAvailableStorage() > itemSize * 1.2; // 20% buffer
+};
 
 export const getLibrary = (): HTMLItem[] => {
     try {
@@ -21,9 +43,14 @@ export const getLibrary = (): HTMLItem[] => {
 export const saveItem = (item: HTMLItem): HTMLItem[] => {
     const current = getLibrary();
     const updated = [item, ...current];
-    // Enforce quota limit to prevent localStorage exceeded errors
+    // Enforce item count limit to prevent localStorage exceeded errors
     const limited = updated.slice(0, MAX_LIBRARY_ITEMS);
     try {
+        // Pre-check storage space
+        const itemSize = item.size || new Blob([item.content]).size;
+        if (!hasStorageSpace(itemSize)) {
+            throw new Error("Storage quota exceeded. Try deleting old items.");
+        }
         localStorage.setItem(STORAGE_KEY, JSON.stringify(limited));
         return limited;
     } catch (e) {
@@ -44,72 +71,26 @@ export const deleteItem = (id: string): HTMLItem[] => {
     }
 };
 
-export const updateItem = (id: string, updates: Partial<HTMLItem>): HTMLItem[] => {
-    const current = getLibrary();
-    const updated = current.map(item => item.id === id ? { ...item, ...updates } : item);
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-        return updated;
-    } catch (e) {
-        console.error("Failed to update item", e);
-        return current; // Return current state on error instead of empty array
-    }
+export const clearLibrary = (): void => {
+    localStorage.removeItem(STORAGE_KEY);
 };
 
 /**
- * Extracts metadata from a raw HTML string.
- */
-export const extractMetadata = (html: string) => {
-    // Return safe defaults if input is invalid
-    if (!html || typeof html !== 'string') {
-        return { title: 'Untitled Document', description: '', ogImage: undefined };
-    }
-
-    try {
-        const parser = new DOMParser();
-        const doc = parser.parseFromString(html, 'text/html');
-
-        // Title: prefer <title>, then first <h1>, then og:title, then fallback
-        const title = 
-            doc.querySelector('title')?.textContent?.trim() ||
-            doc.querySelector('h1')?.textContent?.trim() ||
-            doc.querySelector('meta[property="og:title"]')?.getAttribute('content') ||
-            'Untitled Document';
-        
-        // Description: prefer meta description, then og:description
-        const description = 
-            doc.querySelector('meta[name="description"]')?.getAttribute('content') ||
-            doc.querySelector('meta[property="og:description"]')?.getAttribute('content') ||
-            '';
-        
-        // Optional: extract og:image for thumbnail
-        const ogImage = doc.querySelector('meta[property="og:image"]')?.getAttribute('content') || undefined;
-
-        return { title, description, ogImage };
-    } catch (e) {
-        console.error("Failed to extract metadata from HTML:", e);
-        return { title: 'Untitled Document', description: '', ogImage: undefined };
-    }
-};
-
-/**
- * Creates an HTMLItem from an artifact
+ * Create a new library item from content
  */
 export const createLibraryItem = (
-    html: string,
-    prompt: string,
-    title?: string,
+    content: string,
+    description: string,
+    title: string,
     tags: string[] = []
 ): HTMLItem => {
-    const metadata = extractMetadata(html);
     return {
         id: nanoid(),
-        title: title || metadata.title || prompt.slice(0, 50),
-        description: metadata.description || prompt,
-        content: html,
-        createdAt: Date.now(),
+        content,
+        description,
+        title,
         tags,
-        size: new Blob([html]).size,
-        prompt
+        createdAt: Date.now(),
+        size: new Blob([content]).size,
     };
 };
