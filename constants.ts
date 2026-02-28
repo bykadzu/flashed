@@ -12,6 +12,9 @@ export const FOCUS_DELAY = 100;
 export const PLACEHOLDER_FETCH_DELAY = 1000;
 export const PLACEHOLDER_CYCLE_INTERVAL = 3000;
 
+// API Configuration
+export const DEFAULT_FETCH_TIMEOUT_MS = 30000; // 30 seconds
+
 // Content Limits
 export const HTML_PREVIEW_MAX_LENGTH = 12000;
 
