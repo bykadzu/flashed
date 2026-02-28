@@ -1,11 +1,12 @@
 // OpenRouter API helper
 // Docs: https://openrouter.ai/docs
 
+import { DEFAULT_FETCH_TIMEOUT_MS } from '../constants';
+
 // Retry configuration
 const DEFAULT_MAX_RETRIES = 3;
 const DEFAULT_INITIAL_DELAY_MS = 1000;
 const DEFAULT_BACKOFF_MULTIPLIER = 2;
-const DEFAULT_FETCH_TIMEOUT_MS = 30000;
 
 /**
  * Fetch with timeout wrapper
