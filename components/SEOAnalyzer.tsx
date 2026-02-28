@@ -119,6 +119,7 @@ function analyzeHTML(html: string): SEOAnalysis {
     const hasOgTitle = !!doc.querySelector('meta[property="og:title"]');
     const hasOgDesc = !!doc.querySelector('meta[property="og:description"]');
     const hasOgImage = !!doc.querySelector('meta[property="og:image"]');
+    const hasOgUrl = !!doc.querySelector('meta[property="og:url"]');
     const hasOgTags = hasOgTitle && hasOgDesc;
 
     // Twitter Card tags
@@ -147,6 +148,14 @@ function analyzeHTML(html: string): SEOAnalysis {
             category: 'Meta Tags',
             message: 'Missing Open Graph image tag. Social media shares will not display a preview image.',
             fix: 'add-og-image',
+        });
+    }
+    if (!hasOgUrl) {
+        issues.push({
+            type: 'info',
+            category: 'Meta Tags',
+            message: 'Missing Open Graph URL tag. Social media shares should specify the canonical URL.',
+            fix: 'add-og-url',
         });
     }
 
@@ -379,6 +388,7 @@ function analyzeHTML(html: string): SEOAnalysis {
             hasOgTitle,
             hasOgDesc,
             hasOgImage,
+            hasOgUrl,
             hasTwitterCard,
             hasCanonical,
             hasFavicon,
@@ -510,6 +520,18 @@ function applyAutoFixes(html: string, analysis: SEOAnalysis): string {
                 }
                 break;
             }
+            case 'add-og-url': {
+                if (!doc.querySelector('meta[property="og:url"]')) {
+                    // Use current page URL or placeholder
+                    const meta = doc.createElement('meta');
+                    meta.setAttribute('property', 'og:url');
+                    meta.setAttribute('content', 'https://example.com');
+                    const head = doc.head || doc.createElement('head');
+                    if (!doc.head) doc.documentElement.prepend(head);
+                    head.appendChild(meta);
+                }
+                break;
+            }
             case 'fix-heading-hierarchy': {
                 const headings = doc.querySelectorAll('h1, h2, h3, h4, h5, h6');
                 let currentLevel = 0;
@@ -570,6 +592,7 @@ export default function SEOAnalyzer({ isOpen, onClose, html, onAutoFix }: SEOAna
                     hasOgTitle: false,
                     hasOgDesc: false,
                     hasOgImage: false,
+                    hasOgUrl: false,
                     hasTwitterCard: false,
                     hasCanonical: false,
                     hasFavicon: false,

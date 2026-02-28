@@ -171,6 +171,7 @@ export interface SEOAnalysis {
         hasOgTitle?: boolean;
         hasOgDesc?: boolean;
         hasOgImage?: boolean;
+        hasOgUrl?: boolean;
         hasTwitterCard: boolean;
         hasCanonical: boolean;
         hasFavicon: boolean;
