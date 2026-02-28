@@ -376,3 +376,45 @@ export function formatCurrency(
     return `${currency} ${amount.toFixed(2)}`;
   }
 }
+
+/**
+ * Formats a timestamp as a relative time string (e.g., "2 hours ago", "yesterday")
+ * @param timestamp - Unix timestamp in milliseconds or Date object
+ * @param locale - Locale for formatting (default: 'en')
+ * @returns Relative time string
+ */
+export function formatRelativeTime(timestamp: number | Date, locale: string = 'en'): string {
+    const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHour = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHour / 24);
+    const diffWeek = Math.floor(diffDay / 7);
+    const diffMonth = Math.floor(diffDay / 30);
+    const diffYear = Math.floor(diffDay / 365);
+
+    // Future dates - show as "in X time"
+    if (diffMs < 0) {
+        const absDiffMin = Math.abs(diffMin);
+        const absDiffHour = Math.abs(diffHour);
+        const absDiffDay = Math.abs(diffDay);
+        
+        if (absDiffMin < 60) return 'in a minute';
+        if (absDiffHour < 24) return `in ${absDiffHour} hour${absDiffHour > 1 ? 's' : ''}`;
+        if (absDiffDay < 7) return `in ${absDiffDay} day${absDiffDay > 1 ? 's' : ''}`;
+        return date.toLocaleDateString(locale, { month: 'short', day: 'numeric' });
+    }
+
+    // Past dates
+    if (diffMin < 1) return 'just now';
+    if (diffMin < 60) return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`;
+    if (diffHour < 24) return `${diffHour} hour${diffHour > 1 ? 's' : ''} ago`;
+    if (diffDay === 1) return 'yesterday';
+    if (diffDay < 7) return `${diffDay} days ago`;
+    if (diffWeek === 1) return 'last week';
+    if (diffMonth < 12) return `${diffMonth} month${diffMonth > 1 ? 's' : ''} ago`;
+    if (diffYear === 1) return 'last year';
+    return `${diffYear} years ago`;
+}
