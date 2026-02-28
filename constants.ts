@@ -38,19 +38,41 @@ export const MOBILE_BREAKPOINT = 1024;
 export const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 export const INITIAL_PLACEHOLDERS = [
+    // Tech & SaaS
     "Landing page for an AI agent automation platform",
     "Series A fintech dashboard waiting list",
-    "Luxury real estate agency in Los Angeles",
-    "Cybersecurity enterprise solution homepage",
-    "Minimalist portfolio for a senior product designer",
     "SaaS pricing page with glassmorphism effects",
     "Modern health-tech app launch page",
-    "Elegant wedding planner portfolio with gallery",
-    "Premium physiotherapy practice in Zurich",
-    "Modern dental clinic with smile gallery",
-    "Boutique hair salon with online booking",
+    "Cybersecurity enterprise solution homepage",
+    "API developer documentation portal",
+    "Mobile app landing page with app store badges",
+    
+    // Business & Professional
+    "Minimalist portfolio for a senior product designer",
     "Professional law firm with case results",
-    "Cozy coffee shop with loyalty program",
+    "Premium physiotherapy practice in Zurich",
+    "Consulting firm specializing in digital transformation",
+    "Executive coaching services landing page",
+    
+    // Creative & Lifestyle
+    "Elegant wedding planner portfolio with gallery",
+    "Boutique hair salon with online booking",
     "Contemporary architecture firm portfolio",
-    "Luxury spa with package deals"
+    "Luxury spa with package deals",
+    "Cozy coffee shop with loyalty program",
+    "Modern dental clinic with smile gallery",
+    "Personal fitness trainer landing page",
+    "Vintage record store with online shop",
+    
+    // Real Estate & Hospitality
+    "Luxury real estate agency in Los Angeles",
+    "Boutique hotel in Tuscany with booking",
+    "Vacation rental property showcase",
+    "Interior design studio portfolio",
+    
+    // More unique niches
+    "Sustainable fashion brand launch",
+    "Plant nursery e-commerce homepage",
+    "Pet grooming salon with services",
+    "Language learning app landing"
 ];
