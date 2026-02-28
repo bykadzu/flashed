@@ -168,7 +168,12 @@ export interface SEOAnalysis {
         hasViewport: boolean;
         hasCharset: boolean;
         hasOgTags: boolean;
+        hasOgTitle?: boolean;
+        hasOgDesc?: boolean;
+        hasOgImage?: boolean;
+        hasTwitterCard: boolean;
         hasCanonical: boolean;
+        hasFavicon: boolean;
         headingStructure: string[];
         imageCount: number;
         imagesWithAlt: number;

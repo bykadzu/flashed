@@ -30,4 +30,4 @@ declare global {
     interface Window extends BabelWindow {}
 }
 
-export {};
+

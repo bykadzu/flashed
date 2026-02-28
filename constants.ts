@@ -4,10 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
 */
 
-// Locale for date/time formatting (uses browser default if not set)
-export const LOCALE = 'en-US';
-
-// UI Timing Constants (in milliseconds)
+// UI Timing
 export const TOAST_DURATION_DEFAULT = 3000;
 export const TOAST_DURATION_ERROR = 6000;
 export const COPY_FEEDBACK_DURATION = 2000;
@@ -42,7 +39,7 @@ export const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 export const INITIAL_PLACEHOLDERS = [
     "Landing page for an AI agent automation platform",
-    "Series A Fintech dashboard waiting list",
+    "Series A fintech dashboard waiting list",
     "Luxury real estate agency in Los Angeles",
     "Cybersecurity enterprise solution homepage",
     "Minimalist portfolio for a senior product designer",

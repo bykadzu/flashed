@@ -121,11 +121,16 @@ function analyzeHTML(html: string): SEOAnalysis {
     const hasOgImage = !!doc.querySelector('meta[property="og:image"]');
     const hasOgTags = hasOgTitle && hasOgDesc;
 
+    // Twitter Card tags
+    const hasTwitterCard = !!doc.querySelector('meta[name="twitter:card"]');
+    const hasTwitterSite = !!doc.querySelector('meta[name="twitter:site"]');
+
     if (!hasOgTitle) {
         issues.push({
             type: 'info',
             category: 'Meta Tags',
             message: 'Missing Open Graph title tag. Social media shares will lack a custom title.',
+            fix: 'add-og-title',
         });
     }
     if (!hasOgDesc) {
@@ -133,6 +138,7 @@ function analyzeHTML(html: string): SEOAnalysis {
             type: 'info',
             category: 'Meta Tags',
             message: 'Missing Open Graph description tag. Social media shares will lack a description.',
+            fix: 'add-og-description',
         });
     }
     if (!hasOgImage) {
@@ -140,6 +146,23 @@ function analyzeHTML(html: string): SEOAnalysis {
             type: 'info',
             category: 'Meta Tags',
             message: 'Missing Open Graph image tag. Social media shares will not display a preview image.',
+            fix: 'add-og-image',
+        });
+    }
+
+    // Twitter Card checks
+    if (!hasTwitterCard) {
+        issues.push({
+            type: 'info',
+            category: 'Meta Tags',
+            message: 'Missing Twitter Card meta tags. Twitter shares will not display a preview card.',
+        });
+    }
+    if (!hasTwitterSite && hasTwitterCard) {
+        issues.push({
+            type: 'info',
+            category: 'Meta Tags',
+            message: 'Missing Twitter Site (@username) tag. Add twitter:site for better Twitter previews.',
         });
     }
 
@@ -149,6 +172,19 @@ function analyzeHTML(html: string): SEOAnalysis {
             type: 'info',
             category: 'Meta Tags',
             message: 'Missing canonical link. This helps prevent duplicate content issues in search engines.',
+        });
+    }
+
+    // Favicon check
+    const hasFavicon = !!doc.querySelector('link[rel="icon"]') ||
+        !!doc.querySelector('link[rel="shortcut icon"]') ||
+        !!doc.querySelector('link[rel="apple-touch-icon"]');
+    if (!hasFavicon) {
+        issues.push({
+            type: 'info',
+            category: 'Meta Tags',
+            message: 'Missing favicon link. Add a favicon for browser tab branding.',
+            fix: 'add-favicon',
         });
     }
 
@@ -340,7 +376,12 @@ function analyzeHTML(html: string): SEOAnalysis {
             hasViewport,
             hasCharset,
             hasOgTags,
+            hasOgTitle,
+            hasOgDesc,
+            hasOgImage,
+            hasTwitterCard,
             hasCanonical,
+            hasFavicon,
             headingStructure,
             imageCount,
             imagesWithAlt,
@@ -418,6 +459,57 @@ function applyAutoFixes(html: string, analysis: SEOAnalysis): string {
                 }
                 break;
             }
+            case 'add-favicon': {
+                if (!doc.querySelector('link[rel="icon"]') && !doc.querySelector('link[rel="shortcut icon"]')) {
+                    const link = doc.createElement('link');
+                    link.setAttribute('rel', 'icon');
+                    link.setAttribute('type', 'image/svg+xml');
+                    link.setAttribute('href', 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">⚡</text></svg>');
+                    const head = doc.head || doc.createElement('head');
+                    if (!doc.head) doc.documentElement.prepend(head);
+                    head.appendChild(link);
+                }
+                break;
+            }
+            case 'add-og-title': {
+                if (!doc.querySelector('meta[property="og:title"]')) {
+                    const title = doc.querySelector('title')?.textContent || doc.querySelector('h1')?.textContent || 'My Page';
+                    const meta = doc.createElement('meta');
+                    meta.setAttribute('property', 'og:title');
+                    meta.setAttribute('content', title.trim());
+                    const head = doc.head || doc.createElement('head');
+                    if (!doc.head) doc.documentElement.prepend(head);
+                    head.appendChild(meta);
+                }
+                break;
+            }
+            case 'add-og-description': {
+                if (!doc.querySelector('meta[property="og:description"]')) {
+                    const desc = doc.querySelector('meta[name="description"]')?.getAttribute('content') || 
+                                 doc.querySelector('p')?.textContent?.slice(0, 160) || 'Page description';
+                    const meta = doc.createElement('meta');
+                    meta.setAttribute('property', 'og:description');
+                    meta.setAttribute('content', desc.trim());
+                    const head = doc.head || doc.createElement('head');
+                    if (!doc.head) doc.documentElement.prepend(head);
+                    head.appendChild(meta);
+                }
+                break;
+            }
+            case 'add-og-image': {
+                if (!doc.querySelector('meta[property="og:image"]')) {
+                    // Use first image if available, otherwise use placeholder
+                    const firstImg = doc.querySelector('img');
+                    const imgSrc = firstImg?.getAttribute('src') || '';
+                    const meta = doc.createElement('meta');
+                    meta.setAttribute('property', 'og:image');
+                    meta.setAttribute('content', imgSrc || 'https://placehold.co/1200x630/png?text=Page+Preview');
+                    const head = doc.head || doc.createElement('head');
+                    if (!doc.head) doc.documentElement.prepend(head);
+                    head.appendChild(meta);
+                }
+                break;
+            }
             case 'fix-heading-hierarchy': {
                 const headings = doc.querySelectorAll('h1, h2, h3, h4, h5, h6');
                 let currentLevel = 0;
@@ -475,7 +567,12 @@ export default function SEOAnalyzer({ isOpen, onClose, html, onAutoFix }: SEOAna
                     hasViewport: false,
                     hasCharset: false,
                     hasOgTags: false,
+                    hasOgTitle: false,
+                    hasOgDesc: false,
+                    hasOgImage: false,
+                    hasTwitterCard: false,
                     hasCanonical: false,
+                    hasFavicon: false,
                     headingStructure: [],
                     imageCount: 0,
                     imagesWithAlt: 0,
@@ -501,9 +598,7 @@ export default function SEOAnalyzer({ isOpen, onClose, html, onAutoFix }: SEOAna
         return grouped;
     }, [analysis]);
 
-    const fixableCount = useMemo(() => {
-        return analysis.issues.filter((i) => i.fix).length;
-    }, [analysis]);
+    const fixableCount = analysis.issues.filter((i) => i.fix).length;
 
     // Reset fixApplied when html changes
     useEffect(() => {
@@ -687,7 +782,7 @@ export default function SEOAnalyzer({ isOpen, onClose, html, onAutoFix }: SEOAna
                     {/* Key Metrics */}
                     <div style={{
                         display: 'grid',
-                        gridTemplateColumns: 'repeat(3, 1fr)',
+                        gridTemplateColumns: 'repeat(4, 1fr)',
                         gap: '8px',
                         marginBottom: '24px',
                     }}>
@@ -697,7 +792,9 @@ export default function SEOAnalyzer({ isOpen, onClose, html, onAutoFix }: SEOAna
                             { label: 'Viewport', ok: analysis.meta.hasViewport },
                             { label: 'Charset', ok: analysis.meta.hasCharset },
                             { label: 'OG Tags', ok: analysis.meta.hasOgTags },
+                            { label: 'Twitter', ok: analysis.meta.hasTwitterCard },
                             { label: 'Canonical', ok: analysis.meta.hasCanonical },
+                            { label: 'Favicon', ok: analysis.meta.hasFavicon },
                         ].map((item) => (
                             <div
                                 key={item.label}

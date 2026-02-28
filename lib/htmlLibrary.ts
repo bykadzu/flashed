@@ -6,6 +6,7 @@ import { nanoid } from 'nanoid';
 import { HTMLItem } from '../types';
 
 const STORAGE_KEY = 'flashed_library_v1';
+const MAX_LIBRARY_ITEMS = 50;
 const MAX_STORAGE_MB = 5; // Approximate localStorage limit
 
 /**
@@ -42,14 +43,16 @@ export const getLibrary = (): HTMLItem[] => {
 export const saveItem = (item: HTMLItem): HTMLItem[] => {
     const current = getLibrary();
     const updated = [item, ...current];
+    // Enforce item count limit to prevent localStorage exceeded errors
+    const limited = updated.slice(0, MAX_LIBRARY_ITEMS);
     try {
         // Pre-check storage space
         const itemSize = item.size || new Blob([item.content]).size;
         if (!hasStorageSpace(itemSize)) {
             throw new Error("Storage quota exceeded. Try deleting old items.");
         }
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-        return updated;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(limited));
+        return limited;
     } catch (e) {
         console.error("Storage quota exceeded", e);
         throw new Error("Storage quota exceeded. Try deleting old items.");
@@ -59,61 +62,15 @@ export const saveItem = (item: HTMLItem): HTMLItem[] => {
 export const deleteItem = (id: string): HTMLItem[] => {
     const current = getLibrary();
     const updated = current.filter(i => i.id !== id);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    return updated;
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+        return updated;
+    } catch (e) {
+        console.error("Failed to delete item", e);
+        return current; // Return current state on error instead of empty array
+    }
 };
 
-export const updateItem = (id: string, updates: Partial<HTMLItem>): HTMLItem[] => {
-    const current = getLibrary();
-    const updated = current.map(item => item.id === id ? { ...item, ...updates } : item);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    return updated;
-};
-
-/**
- * Extracts metadata from a raw HTML string.
- */
-export const extractMetadata = (html: string) => {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(html, 'text/html');
-
-    // Title: prefer <title>, then first <h1>, then og:title, then fallback
-    const title = 
-        doc.querySelector('title')?.textContent?.trim() ||
-        doc.querySelector('h1')?.textContent?.trim() ||
-        doc.querySelector('meta[property="og:title"]')?.getAttribute('content') ||
-        'Untitled Document';
-    
-    // Description: prefer meta description, then og:description
-    const description = 
-        doc.querySelector('meta[name="description"]')?.getAttribute('content') ||
-        doc.querySelector('meta[property="og:description"]')?.getAttribute('content') ||
-        '';
-    
-    // Optional: extract og:image for thumbnail
-    const ogImage = doc.querySelector('meta[property="og:image"]')?.getAttribute('content') || undefined;
-
-    return { title, description, ogImage };
-};
-
-/**
- * Creates an HTMLItem from an artifact
- */
-export const createLibraryItem = (
-    html: string,
-    prompt: string,
-    title?: string,
-    tags: string[] = []
-): HTMLItem => {
-    const metadata = extractMetadata(html);
-    return {
-        id: nanoid(),
-        title: title || metadata.title || prompt.slice(0, 50),
-        description: metadata.description || prompt,
-        content: html,
-        createdAt: Date.now(),
-        tags,
-        size: new Blob([html]).size,
-        prompt
-    };
+export const clearLibrary = (): void => {
+    localStorage.removeItem(STORAGE_KEY);
 };

@@ -6,15 +6,15 @@
 
 //Vibe coded by ammaar@google.com
 
-import { createOpenRouterClient, DEFAULT_MODEL, getStoredModel, setStoredModel, ModelId, ContentPart } from './lib/openrouter';
+import { createOpenRouterClient, getStoredModel, setStoredModel, ModelId, ContentPart } from './lib/openrouter';
 import { getApiKey, validateEnv, ENV } from './lib/env';
 import { fetchImagesForPrompt } from './lib/unsplash';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import ReactDOM from 'react-dom/client';
-import { ClerkProvider, SignedIn, SignedOut, SignInButton, UserButton } from '@clerk/clerk-react';
+import { ClerkProvider, SignedIn, SignedOut, SignInButton } from '@clerk/clerk-react';
 import { useAuth } from './lib/useAuth';
 
-import { Artifact, Session, ComponentVariation, LayoutOption, BrandKit, Project, Site, SitePage, HTMLItem, VersionEntry, ABVariant, ExtractedComponent } from './types';
+import { Artifact, Session, ComponentVariation, BrandKit, Project, Site, SitePage, HTMLItem, VersionEntry, ABVariant, ExtractedComponent } from './types';
 import {
     INITIAL_PLACEHOLDERS,
     FOCUS_DELAY,
@@ -26,7 +26,7 @@ import {
     VARIANT_OPTIONS,
     STYLE_FALLBACKS
 } from './constants';
-import { generateId, parseDataUrl, formatTimestamp, formatTimestampCompact } from './utils';
+import { generateId, parseDataUrl,  formatTimestampCompact } from './utils';
 
 // ===== ERROR HANDLING & VALIDATION UTILITIES =====
 
@@ -39,6 +39,18 @@ function sanitizePrompt(input: string): string {
         .replace(/^(ignore|disregard|forget|skip)[\s:]/gi, '')
         .replace(/```/g, '')
         .slice(0, 2000); // Limit length
+}
+
+/**
+ * Escape HTML special characters to prevent XSS
+ */
+function escapeHtml(str: string): string {
+    return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 /**
@@ -62,28 +74,6 @@ function isValidHtml(html: string): boolean {
     return lower.includes('<html') || lower.includes('<!doctype') || lower.includes('<body');
 }
 
-/**
- * Retry helper with exponential backoff
- */
-async function withRetry<T>(
-    fn: () => Promise<T>,
-    maxRetries: number = 2,
-    baseDelay: number = 500
-): Promise<T> {
-    let lastError: unknown;
-    for (let i = 0; i <= maxRetries; i++) {
-        try {
-            return await fn();
-        } catch (e: unknown) {
-            lastError = e;
-            if (i < maxRetries) {
-                await new Promise(r => setTimeout(r, baseDelay * Math.pow(2, i)));
-            }
-        }
-    }
-    throw lastError;
-}
-
 // ===== END UTILITIES =====
 
 import DottedGlowBackground from './components/DottedGlowBackground';
@@ -103,16 +93,9 @@ import {
     XIcon,
     HistoryIcon,
     DownloadIcon,
-    PublishIcon,
-    GlobeIcon,
-    ShareIcon,
     PaletteIcon,
-    FolderIcon,
     CloneIcon,
     TemplateIcon,
-    ChartIcon,
-    SettingsIcon,
-    HomeIcon,
     LayersIcon,
     BookmarkIcon,
     ShieldIcon,
@@ -123,11 +106,10 @@ import {
     ABTestIcon,
     SEOIcon,
     ExportIcon,
-    WandIcon
 } from './components/Icons';
 import PublishModal from './components/PublishModal';
 import ShareModal from './components/ShareModal';
-import RefineInput from './components/RefineInput';
+import RefineInput, { RefineInputHandle } from './components/RefineInput';
 import BrandKitEditor from './components/BrandKitEditor';
 import ProjectManager from './components/ProjectManager';
 import TemplateLibrary from './components/TemplateLibrary';
@@ -147,7 +129,7 @@ import SEOAnalyzer from './components/SEOAnalyzer';
 import ComponentExtractor from './components/ComponentExtractor';
 import ABTestGenerator from './components/ABTestGenerator';
 import KeyboardShortcutsHelp from './components/KeyboardShortcutsHelp';
-import { ArtifactGridSkeleton } from './components/LoadingSkeleton';
+
 import { useUndoRedo } from './lib/useUndoRedo';
 import { useDraftAutoSave } from './lib/useDraftAutoSave';
 
@@ -157,7 +139,7 @@ function App() {
   const userId = user?.id;
 
   // Toast notifications
-  const { toasts, dismissToast, showSuccess, showError, showWarning } = useToast();
+  const { toasts, dismissToast, showSuccess, showError } = useToast();
 
   const [sessions, setSessions] = useState<Session[]>([]);
   const [currentSessionIndex, setCurrentSessionIndex] = useState<number>(-1);
@@ -200,7 +182,7 @@ function App() {
   // Site Mode State
   const [siteMode, setSiteMode] = useState(false);
   const [pageStructure, setPageStructure] = useState<string>('');
-  const [currentSitePageId, setCurrentSitePageId] = useState<string>('');
+  const [_currentSitePageId, setCurrentSitePageId] = useState<string>('');
   
   // Template Library State
   const [isTemplateLibraryOpen, setIsTemplateLibraryOpen] = useState(false);
@@ -262,6 +244,7 @@ function App() {
   const urlInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const gridScrollRef = useRef<HTMLDivElement>(null);
+  const refineInputRef = useRef<RefineInputHandle>(null);
 
   // Load from LocalStorage
   useEffect(() => {
@@ -301,7 +284,7 @@ function App() {
                   setVersionHistory(parsed);
               }
           }
-      } catch (e: unknown) {
+      } catch (e) {
           console.warn("Failed to load sessions", e);
       }
 
@@ -318,7 +301,7 @@ function App() {
               // Limit to last 10 to avoid quota issues
               const toSave = sessions.slice(-10);
               localStorage.setItem('flash_ui_sessions', JSON.stringify(toSave));
-          } catch (e: unknown) {
+          } catch (e) {
               console.warn("Failed to save sessions (quota exceeded?)", e);
           }
       }
@@ -327,8 +310,10 @@ function App() {
   // Save brand kits to LocalStorage
   useEffect(() => {
       try {
-          localStorage.setItem('flash_ui_brand_kits', JSON.stringify(brandKits));
-      } catch (e: unknown) {
+          // Limit to last 20 brand kits to avoid quota issues
+          const toSave = brandKits.slice(-20);
+          localStorage.setItem('flash_ui_brand_kits', JSON.stringify(toSave));
+      } catch (e) {
           console.warn("Failed to save brand kits", e);
       }
   }, [brandKits]);
@@ -336,8 +321,10 @@ function App() {
   // Save projects to LocalStorage
   useEffect(() => {
       try {
-          localStorage.setItem('flash_ui_projects', JSON.stringify(projects));
-      } catch (e: unknown) {
+          // Limit to last 30 projects to avoid quota issues
+          const toSave = projects.slice(-30);
+          localStorage.setItem('flash_ui_projects', JSON.stringify(toSave));
+      } catch (e) {
           console.warn("Failed to save projects", e);
       }
   }, [projects]);
@@ -349,7 +336,7 @@ function App() {
               // Keep last 100 versions to avoid quota issues
               const toSave = versionHistory.slice(-100);
               localStorage.setItem('flashed_version_history', JSON.stringify(toSave));
-          } catch (e: unknown) {
+          } catch (e) {
               console.warn("Failed to save version history", e);
           }
       }
@@ -478,9 +465,29 @@ function App() {
               return;
           }
 
+          // Ctrl+Enter: Generate more variants
+          if (mod && e.key === 'Enter') {
+              e.preventDefault();
+              handleGenerateVariations?.();
+              return;
+          }
+
           // Arrow keys for navigation when not in input
           if (e.key === 'ArrowLeft') { prevItem(); return; }
           if (e.key === 'ArrowRight') { nextItem(); return; }
+          // Ctrl+R: Focus refine input when artifact is selected
+          if (mod && e.key === 'r' && focusedArtifactIndex !== null) {
+              e.preventDefault();
+              refineInputRef.current?.focusInput();
+              return;
+          }
+
+          // Ctrl+Enter: Generate more variants (when artifact is focused and not loading)
+          if (mod && e.key === 'Enter' && focusedArtifactIndex !== null && !isLoading) {
+              e.preventDefault();
+              handleGenerateVariations();
+              return;
+          }
 
           // Number keys for quick variant selection
           const activeSession = sessions[currentSessionIndex];
@@ -497,7 +504,7 @@ function App() {
       return () => document.removeEventListener('keydown', handleGlobalKeyDown);
   }, [focusedArtifactIndex, currentSessionIndex, undoRedo.canUndo, undoRedo.canRedo,
       isExportModalOpen, isVersionHistoryOpen, isSEOAnalyzerOpen, isComponentExtractorOpen,
-      isABTestOpen, isKeyboardShortcutsOpen, sessions]);
+      isABTestOpen, isKeyboardShortcutsOpen, sessions, isLoading]);
 
   // Handle Image Click and Site Navigation Messages from Iframe
   useEffect(() => {
@@ -674,7 +681,7 @@ function App() {
                       setPlaceholders(prev => [...prev, ...shuffled]);
                   }
               }
-          } catch (e: unknown) {
+          } catch (e) {
               console.warn("Silently failed to fetch dynamic placeholders", e);
           }
       };
@@ -690,7 +697,7 @@ function App() {
       if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const parseJsonStream = async function* (responseStream: AsyncGenerator<{ text: string }>) {
+  const _parseJsonStream = async function* (responseStream: AsyncGenerator<{ text: string }>) {
       let buffer = '';
       for await (const chunk of responseStream) {
           const text = chunk.text;
@@ -715,7 +722,7 @@ function App() {
                       yield JSON.parse(jsonString);
                       buffer = buffer.substring(end + 1);
                       start = buffer.indexOf('{');
-                  } catch (e: unknown) {
+                  } catch {
                       start = buffer.indexOf('{', start + 1);
                   }
               } else {
@@ -800,7 +807,7 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
                         setComponentVariations(prev => [...prev, result]);
                     }
                     return result;
-                } catch (e: unknown) {
+                } catch {
                     // Individual variation failed, continue with others
                     return null;
                 }
@@ -811,7 +818,7 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
         if (successCount === 0) {
             showError('Failed to generate variations. Please try again.');
         }
-    } catch (e: unknown) {
+    } catch (e) {
         showError((e instanceof Error ? e.message : String(e)) || 'Failed to generate variations');
     } finally {
         setIsLoading(false);
@@ -839,7 +846,7 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
       }
   };
   
-  const handleShowHistory = () => {
+  const _handleShowHistory = () => {
       setDrawerState({ isOpen: true, mode: 'history', title: 'History', data: null });
   };
 
@@ -894,7 +901,7 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
                   htmlLibrary.saveItem(item);
               });
               showSuccess(`Saved ${pages.length} site pages to library!`);
-          } catch (e: unknown) {
+          } catch (e) {
               showError((e instanceof Error ? e.message : String(e)) || 'Failed to save site to library');
           }
           return;
@@ -912,7 +919,7 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
           );
           htmlLibrary.saveItem(item);
           showSuccess('Saved to library!');
-      } catch (e: unknown) {
+      } catch (e) {
           showError((e instanceof Error ? e.message : String(e)) || 'Failed to save to library');
       }
   };
@@ -926,10 +933,11 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
       try {
           const batchId = generateId();
           completeArtifacts.forEach((artifact, index) => {
+              const sessionPrompt = session.prompt || 'Untitled';
               const item = htmlLibrary.createLibraryItem(
                   artifact.html,
-                  session.prompt,
-                  artifact.seo?.title || `${session.prompt.slice(0, 30)} - ${artifact.styleName}`,
+                  sessionPrompt,
+                  artifact.seo?.title || `${sessionPrompt.slice(0, 30)} - ${artifact.styleName}`,
                   ['batch', `batch-${batchId}`]
               );
               item.batchId = batchId;
@@ -937,7 +945,7 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
               htmlLibrary.saveItem(item);
           });
           showSuccess(`Saved ${completeArtifacts.length} variants to library!`);
-      } catch (e: unknown) {
+      } catch (e) {
           showError((e instanceof Error ? e.message : String(e)) || 'Failed to save batch to library');
       }
   };
@@ -999,7 +1007,7 @@ Create an A/B test variant of this design.
 
 **ORIGINAL DESIGN:**
 \`\`\`html
-${artifact.html.substring(0, 6000)}
+${artifact.html.substring(0, HTML_PREVIEW_MAX_LENGTH)}
 \`\`\`
 
 **A/B TEST CATEGORY:** ${category}
@@ -1035,7 +1043,7 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
               };
               setAbVariants(prev => [...prev, variant]);
           }
-      } catch (e: unknown) {
+      } catch (e) {
           showError((e instanceof Error ? e.message : String(e)) || 'Failed to generate A/B variant');
       } finally {
           setIsABGenerating(false);
@@ -1183,7 +1191,7 @@ Return ONLY the complete, updated HTML. No explanations or markdown code blocks.
               } : sess
           ));
           
-      } catch (e: unknown) {
+      } catch (e) {
           showError((e instanceof Error ? e.message : String(e)) || 'Failed to refine design. Please try again.');
           // Restore original state on error
           setSessions(prev => prev.map((sess, i) => 
@@ -1354,9 +1362,10 @@ Return ONLY the complete, updated HTML. No explanations or markdown code blocks.
           isHome: true
       };
 
+      const siteName = session.prompt || 'Untitled Site';
       const newSite: Site = {
           id: generateId(),
-          name: session.prompt.substring(0, 50),
+          name: siteName.substring(0, 50),
           styleName: artifact.styleName,
           pages: [homePage],
           seo: artifact.seo,
@@ -1487,15 +1496,16 @@ Return ONLY RAW HTML.
               } : s
           ));
           
-      } catch (e: unknown) {
-          showError((e instanceof Error ? e.message : String(e)) || 'Failed to add page. Please try again.');
+      } catch (e) {
+          const errMsg = (e instanceof Error ? e.message : String(e));
+          showError(errMsg || 'Failed to add page. Please try again.');
           setSessions(prev => prev.map(s => 
               s.id === sessionId && s.site ? {
                   ...s,
                   site: {
                       ...s.site,
                       pages: s.site.pages.map(p => 
-                          p.id === pageId ? { ...p, html: `<div style="color: #ff6b6b; padding: 20px;">Error: ${e instanceof Error ? e.message : String(e)}</div>`, status: 'error' } : p
+                          p.id === pageId ? { ...p, html: `<div style="color: #ff6b6b; padding: 20px;">Error: ${escapeHtml(errMsg)}</div>`, status: 'error' } : p
                       )
                   }
               } : s
@@ -1681,7 +1691,7 @@ Return ONLY RAW HTML.
                 ));
             }
             
-        } catch (e: unknown) {
+        } catch (e) {
             showError((e instanceof Error ? e.message : String(e)) || 'Failed to generate site. Please try again.');
         } finally {
             setIsLoading(false);
@@ -1757,8 +1767,8 @@ Return ONLY a raw JSON array of ${variantCount} strings describing the specific 
         if (jsonMatch) {
             try {
                 generatedStyles = JSON.parse(jsonMatch[0]);
-            } catch (e: unknown) {
-                console.warn("Failed to parse styles, using fallbacks");
+            } catch (e) {
+                console.warn("Failed to parse styles, using fallbacks", e);
             }
         }
 
@@ -1902,13 +1912,14 @@ Return ONLY RAW HTML.
                     } : sess
                 ));
 
-            } catch (e: unknown) {
+            } catch (e) {
+                const errMsg = (e instanceof Error ? e.message : String(e));
                 showError(`Failed to generate ${artifact.styleName} variation`);
                 setSessions(prev => prev.map(sess =>
                     sess.id === sessionId ? {
                         ...sess,
                         artifacts: sess.artifacts.map(art =>
-                            art.id === artifact.id ? { ...art, html: `<div style="color: #ff6b6b; padding: 20px;">Error: ${e instanceof Error ? e.message : String(e)}</div>`, status: 'error' } : art
+                            art.id === artifact.id ? { ...art, html: `<div style="color: #ff6b6b; padding: 20px;">Error: ${escapeHtml(errMsg)}</div>`, status: 'error' } : art
                         )
                     } : sess
                 ));
@@ -1921,7 +1932,7 @@ Return ONLY RAW HTML.
             await Promise.all(batch.map((art, i) => generateArtifact(art, generatedStyles[batchStart + i])));
         }
 
-    } catch (e: unknown) {
+    } catch (e) {
         showError((e instanceof Error ? e.message : String(e)) || 'Failed to generate designs. Please try again.');
     } finally {
         setIsLoading(false);
@@ -2162,8 +2173,8 @@ Return ONLY RAW HTML.
             <ABTestGenerator
                 isOpen={isABTestOpen}
                 onClose={() => { setIsABTestOpen(false); setAbVariants([]); }}
-                originalHtml={currentSession.artifacts[focusedArtifactIndex].html}
-                prompt={currentSession.prompt}
+                _originalHtml={currentSession.artifacts[focusedArtifactIndex].html}
+                _prompt={currentSession.prompt}
                 onGenerate={handleABGenerate}
                 onApplyVariant={handleApplyABVariant}
                 variants={abVariants}
@@ -2255,13 +2266,13 @@ Return ONLY RAW HTML.
                          <p>Instant landing pages for customer demos</p>
                          {!hasStarted && (
                              <>
-                                 <button className="surprise-button" onClick={handleSurpriseMe} disabled={isLoading}>
+                                 <button className="surprise-button" onClick={handleSurpriseMe} disabled={isLoading} aria-label="Example Pitch — generate a surprise landing page">
                                      <SparklesIcon /> Example Pitch
                                  </button>
-                                 <button className="template-browse-btn" onClick={() => setIsTemplateLibraryOpen(true)} disabled={isLoading}>
+                                 <button className="template-browse-btn" onClick={() => setIsTemplateLibraryOpen(true)} disabled={isLoading} aria-label="Browse templates">
                                      <TemplateIcon /> Browse Templates
                                  </button>
-                                 <button className="template-browse-btn" onClick={() => setIsPrivacyPolicyOpen(true)} disabled={isLoading}>
+                                 <button className="template-browse-btn" onClick={() => setIsPrivacyPolicyOpen(true)} disabled={isLoading} aria-label="Open privacy policy generator">
                                      <ShieldIcon /> Privacy Policy
                                  </button>
                              </>
@@ -2325,6 +2336,7 @@ Return ONLY RAW HTML.
 
             {/* Refine Input - appears when artifact is focused */}
             <RefineInput
+                ref={refineInputRef}
                 isVisible={focusedArtifactIndex !== null && !isLoading}
                 isRefining={isRefining}
                 onRefine={handleRefine}
@@ -2337,28 +2349,28 @@ Return ONLY RAW HTML.
                  <div className="action-buttons">
                     {currentSession?.mode === 'site' ? (
                         <>
-                            <button onClick={() => setFocusedArtifactIndex(null)}>
+                            <button onClick={() => setFocusedArtifactIndex(null)} aria-label="Switch to grid view">
                                 <GridIcon /> Grid
                             </button>
-                            <button onClick={handleShowCode}>
+                            <button onClick={handleShowCode} aria-label="View source code">
                                 <CodeIcon /> Source
                             </button>
-                            <button onClick={() => setIsExportModalOpen(true)} title="Export (Ctrl+E)">
+                            <button onClick={() => setIsExportModalOpen(true)} title="Export (Ctrl+E)" aria-label="Export page">
                                 <ExportIcon /> Export
                             </button>
-                            <button onClick={handleDownload}>
+                            <button onClick={handleDownload} aria-label="Download page">
                                 <DownloadIcon /> Download
                             </button>
-                            <button onClick={handleSaveToLibrary}>
+                            <button onClick={handleSaveToLibrary} aria-label="Save to library">
                                 <BookmarkIcon /> Save
                             </button>
-                            <button onClick={() => setIsSEOAnalyzerOpen(true)}>
+                            <button onClick={() => setIsSEOAnalyzerOpen(true)} aria-label="Analyze SEO">
                                 <SEOIcon /> SEO
                             </button>
                         </>
                     ) : (
                         <>
-                            <button onClick={() => setFocusedArtifactIndex(null)}>
+                            <button onClick={() => setFocusedArtifactIndex(null)} aria-label="Switch to grid view">
                                 <GridIcon /> Grid
                             </button>
                             {/* Undo/Redo */}
@@ -2375,7 +2387,7 @@ Return ONLY RAW HTML.
                                             } : sess
                                         ));
                                     }
-                                }} disabled={!undoRedo.canUndo} title="Undo (Ctrl+Z)">
+                                }} disabled={!undoRedo.canUndo} title="Undo (Ctrl+Z)" aria-label="Undo">
                                     <UndoIcon />
                                 </button>
                                 <button onClick={() => {
@@ -2390,7 +2402,7 @@ Return ONLY RAW HTML.
                                             } : sess
                                         ));
                                     }
-                                }} disabled={!undoRedo.canRedo} title="Redo (Ctrl+Shift+Z)">
+                                }} disabled={!undoRedo.canRedo} title="Redo (Ctrl+Shift+Z)" aria-label="Redo">
                                     <RedoIcon />
                                 </button>
                             </div>
@@ -2401,35 +2413,35 @@ Return ONLY RAW HTML.
                             >
                                 <LayersIcon /> Multi-Site
                             </button>
-                            <button onClick={handleGenerateVariations} disabled={isLoading}>
+                            <button onClick={handleGenerateVariations} disabled={isLoading} aria-label="Generate variations">
                                 <SparklesIcon /> Variations
                             </button>
-                            <button onClick={handleShowCode}>
+                            <button onClick={handleShowCode} aria-label="View source code">
                                 <CodeIcon /> Source
                             </button>
-                            <button onClick={() => setIsExportModalOpen(true)} title="Export (Ctrl+E)">
+                            <button onClick={() => setIsExportModalOpen(true)} title="Export (Ctrl+E)" aria-label="Export page">
                                 <ExportIcon /> Export
                             </button>
-                            <button onClick={handleDownload}>
+                            <button onClick={handleDownload} aria-label="Download page">
                                 <DownloadIcon /> Download
                             </button>
-                            <button onClick={handleSaveToLibrary} title="Save (Ctrl+S)">
+                            <button onClick={handleSaveToLibrary} title="Save (Ctrl+S)" aria-label="Save to library">
                                 <BookmarkIcon /> Save
                             </button>
-                            <button onClick={() => setIsVersionHistoryOpen(true)}>
+                            <button onClick={() => setIsVersionHistoryOpen(true)} aria-label="Versions – view version history">
                                 <HistoryIcon /> Versions
                             </button>
-                            <button onClick={() => setIsSEOAnalyzerOpen(true)}>
+                            <button onClick={() => setIsSEOAnalyzerOpen(true)} aria-label="Analyze SEO">
                                 <SEOIcon /> SEO
                             </button>
-                            <button onClick={() => setIsComponentExtractorOpen(true)}>
+                            <button onClick={() => setIsComponentExtractorOpen(true)} aria-label="Extract components">
                                 <ScissorsIcon /> Extract
                             </button>
-                            <button onClick={() => { setAbVariants([]); setIsABTestOpen(true); }}>
+                            <button onClick={() => { setAbVariants([]); setIsABTestOpen(true); }} aria-label="Open A/B test generator">
                                 <ABTestIcon /> A/B Test
                             </button>
                             {currentSession && currentSession.artifacts.length > 3 && (
-                                <button onClick={handleSaveBatchToLibrary}>
+                                <button onClick={handleSaveBatchToLibrary} aria-label="Save all variations to library">
                                     <LayersIcon /> Save All
                                 </button>
                             )}

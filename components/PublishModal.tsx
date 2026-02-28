@@ -4,7 +4,7 @@
 
 import React, { useState, useEffect } from 'react';
 import type { Artifact, SEOSettings, FormSettings } from '../types';
-import { publishPage, isSupabaseConfigured, downloadWithSEO, generateShortId } from '../lib/supabase';
+import { publishPage, isSupabaseConfigured, downloadWithSEO } from '../lib/supabase';
 import { XIcon, CheckIcon } from './Icons';
 import { COPY_FEEDBACK_DURATION } from '../constants';
 

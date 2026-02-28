@@ -5,6 +5,35 @@
 const DEFAULT_MAX_RETRIES = 3;
 const DEFAULT_INITIAL_DELAY_MS = 1000;
 const DEFAULT_BACKOFF_MULTIPLIER = 2;
+const DEFAULT_FETCH_TIMEOUT_MS = 30000;
+
+/**
+ * Fetch with timeout wrapper
+ */
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit & { timeout?: number } = {}
+): Promise<Response> {
+  const { timeout = DEFAULT_FETCH_TIMEOUT_MS, ...fetchOptions } = options;
+  
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  
+  try {
+    const response = await fetch(url, {
+      ...fetchOptions,
+      signal: controller.signal
+    });
+    return response;
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error(`Request timeout after ${timeout}ms`);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
 
 /**
  * Retry helper with exponential backoff
@@ -62,9 +91,9 @@ export async function withRetry<T>(
 
       if (onRetry) {
         onRetry(attempt + 1, lastError, delayMs);
+      } else {
+        console.warn(`Retry attempt ${attempt + 1}/${maxRetries} after ${delayMs}ms:`, lastError.message);
       }
-
-      console.warn(`Retry attempt ${attempt + 1}/${maxRetries} after ${delayMs}ms:`, lastError.message);
 
       await new Promise(resolve => setTimeout(resolve, delayMs));
     }
@@ -74,20 +103,23 @@ export async function withRetry<T>(
 }
 
 export const AVAILABLE_MODELS = [
-  { id: 'google/gemini-3-flash-preview', name: 'Gemini 3 Flash', provider: 'Google' },
-  { id: 'google/gemini-3-pro-preview', name: 'Gemini 3 Pro', provider: 'Google' },
-  { id: 'anthropic/claude-haiku-4.5', name: 'Claude Haiku 4.5', provider: 'Anthropic' },
-  { id: 'anthropic/claude-sonnet-4.5', name: 'Claude Sonnet 4.5', provider: 'Anthropic' },
-  { id: 'qwen/qwen3-coder-next', name: 'Qwen3 Coder', provider: 'Qwen' },
   { id: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash', provider: 'Google' },
-  { id: 'anthropic/claude-opus-4.6', name: 'Claude Opus 4.6', provider: 'Anthropic' },
-  { id: 'minimax/minimax-m2.5', name: 'MiniMax M2.5', provider: 'MiniMax' },
-  { id: 'z-ai/glm-5', name: 'GLM 5', provider: 'Z.ai' },
+  { id: 'google/gemini-2.5-pro-preview-05-06', name: 'Gemini 2.5 Pro', provider: 'Google' },
+  { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', provider: 'Anthropic' },
+  { id: 'anthropic/claude-3.7-sonnet', name: 'Claude 3.7 Sonnet', provider: 'Anthropic' },
+  { id: 'qwen/qwen3-8b', name: 'Qwen3 8B', provider: 'Qwen' },
+  { id: 'qwen/qwen3-30b-a3b', name: 'Qwen3 30B', provider: 'Qwen' },
+  { id: 'deepseek/deepseek-chat', name: 'DeepSeek V3', provider: 'DeepSeek' },
+  { id: 'deepseek/deepseek-r1', name: 'DeepSeek R1', provider: 'DeepSeek' },
+  { id: 'meta-llama/llama-3.1-70b-instruct', name: 'Llama 3.1 70B', provider: 'Meta' },
+  { id: 'mistralai/mistral-small-3.1-24b-instruct', name: 'Mistral Small 3.1', provider: 'Mistral' },
+  { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', provider: 'OpenAI' },
+  { id: 'openai/gpt-4o', name: 'GPT-4o', provider: 'OpenAI' },
 ] as const;
 
 export type ModelId = typeof AVAILABLE_MODELS[number]['id'];
 
-export const DEFAULT_MODEL: ModelId = 'google/gemini-3-flash-preview';
+export const DEFAULT_MODEL: ModelId = 'google/gemini-2.5-flash';
 
 // Storage key for persisting model selection
 const MODEL_STORAGE_KEY = 'flashed_selected_model';
@@ -179,7 +211,7 @@ function convertToOpenRouterFormat(contents: Message | Message[]): Array<{ role:
 export async function generateContent(apiKey: string, options: GenerateOptions): Promise<{ text: string }> {
   const messages = convertToOpenRouterFormat(options.contents);
 
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+  const response = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
@@ -207,7 +239,7 @@ export async function generateContent(apiKey: string, options: GenerateOptions):
 export async function* generateContentStream(apiKey: string, options: GenerateOptions): AsyncGenerator<{ text: string }> {
   const messages = convertToOpenRouterFormat(options.contents);
 
-  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+  const response = await fetchWithTimeout('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,

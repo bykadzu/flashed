@@ -2,14 +2,19 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
-*/
+ * 
+ * Flashed Utility Functions
+ * Common helpers for DOM manipulation, formatting, and data processing
+ */
 
 import { nanoid } from 'nanoid';
+
+// Use crypto.randomUUID() - available in modern browsers in secure contexts (HTTPS)
 
 /**
  * Generate a unique ID using cryptographically secure nanoid
  */
-export const generateId = () => nanoid(12);
+export const generateId = (): string => nanoid(12);
 
 /**
  * Format a timestamp (number or Date) to a human-readable string
@@ -65,6 +70,10 @@ export function parseDataUrl(dataUrl: string): { mimeType: string; data: string 
     return { mimeType, data };
 }
 
+/**
+ * Load an image from a URL and return it as an HTMLImageElement
+ * Useful for preloading images before displaying them
+ */
 export const createImage = (url: string): Promise<HTMLImageElement> =>
   new Promise((resolve, reject) => {
     const image = new Image()
@@ -73,6 +82,154 @@ export const createImage = (url: string): Promise<HTMLImageElement> =>
     image.setAttribute('crossOrigin', 'anonymous')
     image.src = url
   });
+
+/**
+ * Creates a debounced version of a function
+ * Delays execution until after 'wait' milliseconds have elapsed since the last call
+ */
+export function debounce<T extends (...args: unknown[]) => unknown>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  
+  return function(this: unknown, ...args: Parameters<T>) {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+    timeoutId = setTimeout(() => {
+      func.apply(this, args);
+      timeoutId = null;
+    }, wait);
+  };
+}
+
+/**
+ * Creates a throttled version of a function
+ * Ensures the function is called at most once every 'wait' milliseconds
+ */
+export function throttle<T extends (...args: unknown[]) => unknown>(
+  func: T,
+  wait: number
+): (...args: Parameters<T>) => void {
+  let lastCall = 0;
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  
+  return function(this: unknown, ...args: Parameters<T>) {
+    const now = Date.now();
+    const remaining = wait - (now - lastCall);
+    
+    if (remaining <= 0) {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+        timeoutId = null;
+      }
+      lastCall = now;
+      func.apply(this, args);
+    } else if (!timeoutId) {
+      timeoutId = setTimeout(() => {
+        lastCall = Date.now();
+        timeoutId = null;
+        func.apply(this, args);
+      }, remaining);
+    }
+  };
+}
+
+/**
+ * Clamps a number between min and max values
+ */
+export function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
+
+/**
+ * Validates an email address format
+ * @param email - Email string to validate
+ * @returns true if valid email format
+ */
+export function isValidEmail(email: string): boolean {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+}
+
+/**
+ * Validates a URL format
+ * @param url - URL string to validate
+ * @returns true if valid URL
+ */
+export function isValidUrl(url: string): boolean {
+  try {
+    new URL(url);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Checks if a URL is from a trusted origin (prevent open redirects)
+ * @param url - URL to check
+ * @param trustedOrigins - Array of trusted origins (default: current window origin)
+ * @returns true if URL is safe
+ */
+export function isTrustedUrl(url: string, trustedOrigins: string[] = []): boolean {
+  try {
+    const urlObj = new URL(url);
+    const defaultTrusted = typeof window !== 'undefined' ? [window.location.origin] : [];
+    const allTrusted = [...defaultTrusted, ...trustedOrigins];
+    return allTrusted.includes(urlObj.origin);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Generates a random string of specified length
+ */
+export function randomString(length: number): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let result = '';
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
+/**
+ * Converts a string to a URL-friendly slug
+ * @param text - Text to slugify
+ * @returns Slugified string
+ */
+export function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')
+    .replace(/[\s_-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+/**
+ * Truncates a string to a maximum length with ellipsis
+ * @param text - Text to truncate
+ * @param maxLength - Maximum length (default 100)
+ * @returns Truncated string
+ */
+export function truncate(text: string, maxLength = 100): string {
+  if (text.length <= maxLength) return text;
+  return text.slice(0, maxLength - 3) + '...';
+}
+
+/**
+ * Deep clones an object using structuredClone (with fallback)
+ */
+export function deepClone<T>(obj: T): T {
+  if (typeof structuredClone === 'function') {
+    return structuredClone(obj);
+  }
+  return JSON.parse(JSON.stringify(obj));
+}
 
 export async function getCroppedImg(
   imageSrc: string,
@@ -132,4 +289,90 @@ export async function getCroppedImg(
 
   finalCtx.putImageData(data, 0, 0);
   return finalCanvas.toDataURL('image/jpeg');
+}
+
+/**
+ * Safe localStorage get with JSON parsing
+ */
+export function storageGet<T>(key: string, defaultValue: T): T {
+  try {
+    const item = localStorage.getItem(key);
+    return item ? JSON.parse(item) : defaultValue;
+  } catch {
+    return defaultValue;
+  }
+}
+
+/**
+ * Safe localStorage set with JSON stringify
+ */
+export function storageSet<T>(key: string, value: T): boolean {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Safe localStorage remove
+ */
+export function storageRemove(key: string): boolean {
+  try {
+    localStorage.removeItem(key);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Safe JSON parse with fallback
+ */
+export function safeJsonParse<T>(json: string, fallback: T): T {
+  try {
+    return JSON.parse(json);
+  } catch {
+    return fallback;
+  }
+}
+
+/**
+ * Generate a UUID v4 using the Web Crypto API
+ */
+export function uuidv4(): string {
+    // crypto.randomUUID() is available in secure contexts (HTTPS)
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+    }
+    // Fallback: RFC4122 v4 compliant UUID using Math.random
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+        const r = Math.random() * 16 | 0;
+        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
+}
+
+/**
+ * Format a number as currency
+ * @param amount - Number to format
+ * @param currency - Currency code (default: USD)
+ * @param locale - Locale for formatting (default: en-US)
+ * @returns Formatted currency string
+ */
+export function formatCurrency(
+  amount: number,
+  currency: string = 'USD',
+  locale: string = 'en-US'
+): string {
+  try {
+    return new Intl.NumberFormat(locale, {
+      style: 'currency',
+      currency,
+    }).format(amount);
+  } catch {
+    // Fallback for invalid locale/currency
+    return `${currency} ${amount.toFixed(2)}`;
+  }
 }

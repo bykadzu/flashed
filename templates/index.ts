@@ -302,6 +302,174 @@ export const TEMPLATES: Template[] = [
         suggestedStyle: 'Trusted Swiss finance',
         previewColor: '#1565c0',
         isSwiss: true
+    },
+    // ============ Swiss Service Trades ============
+    {
+        id: 'handyman-swiss',
+        name: 'Handyman Services',
+        industry: 'Services',
+        description: 'Swiss handyman and renovation services',
+        prompt: 'Swiss handyman (Allrounder) landing page with renovation services, small repairs, furniture assembly, painting, plumbing minor fixes, and contact form in German/Swiss German',
+        suggestedStyle: 'Reliable Swiss tradesperson',
+        previewColor: '#ff8f00',
+        isSwiss: true
+    },
+    {
+        id: 'cleaning-swiss',
+        name: 'Cleaning Services',
+        industry: 'Services',
+        description: 'Swiss cleaning company',
+        prompt: 'Swiss cleaning services landing page with office cleaning, home cleaning, move-in/move-out cleaning, window cleaning, and subscription plans in German/Swiss German',
+        suggestedStyle: 'Clean professional',
+        previewColor: '#26a69a',
+        isSwiss: true
+    },
+    {
+        id: 'umzug-swiss',
+        name: 'Moving Company',
+        industry: 'Services',
+        description: 'Swiss moving and transport',
+        prompt: 'Swiss moving company (Umzugsfirma) landing page with packing services, storage solutions, piano moving, international moves, and free quote request in German/Swiss German',
+        suggestedStyle: 'Professional Swiss movers',
+        previewColor: '#5d4037',
+        isSwiss: true
+    },
+
+    // ============ Additional Industries ============
+    {
+        id: 'bakery-artisan',
+        name: 'Artisan Bakery',
+        industry: 'Restaurant',
+        description: 'Craft bakery and patisserie',
+        prompt: 'Artisan bakery landing page with fresh bread daily, pastries, custom cakes, ordering system, wholesale orders, and cozy bakery photos',
+        suggestedStyle: 'Warm artisan aesthetic',
+        previewColor: '#d4a373'
+    },
+    {
+        id: 'hotel-boutique',
+        name: 'Boutique Hotel',
+        industry: 'Hospitality',
+        description: 'Small luxury hotel',
+        prompt: 'Boutique hotel landing page with room showcase, amenities,当地 guides, booking engine, special packages, and atmospheric photography',
+        suggestedStyle: 'Luxury boutique',
+        previewColor: '#264653'
+    },
+    {
+        id: 'veterinary-clinic',
+        name: 'Veterinary Clinic',
+        industry: 'Healthcare',
+        description: 'Pet care and animal hospital',
+        prompt: 'Veterinary clinic landing page with services, team introductions, emergency care info, online appointment booking, pet care tips, and new patient forms',
+        suggestedStyle: 'Caring and professional',
+        previewColor: '#2a9d8f'
+    },
+    {
+        id: 'locksmith-local',
+        name: 'Locksmith Services',
+        industry: 'Services',
+        description: 'Emergency locksmith',
+        prompt: 'Local locksmith landing page with 24/7 emergency services, lock repair, key cutting, security upgrades, car locksmith, and service areas',
+        suggestedStyle: 'Trustworthy and fast',
+        previewColor: '#e76f51'
+    },
+    {
+        id: 'tattoo-studio',
+        name: 'Tattoo Studio',
+        industry: 'Creative',
+        description: 'Tattoo and piercing shop',
+        prompt: 'Tattoo studio landing page with artist portfolios, piercing services, booking policy, aftercare info, shop tour, and consultation booking',
+        suggestedStyle: 'Bold artistic',
+        previewColor: '#1d3557'
+    },
+    {
+        id: 'car-wash-auto',
+        name: 'Car Wash & Detailing',
+        industry: 'Automotive',
+        description: 'Auto detailing services',
+        prompt: 'Car wash and auto detailing landing page with services (express, full detail, ceramic coating), pricing, before/after gallery, online booking, and membership plans',
+        suggestedStyle: 'Clean modern automotive',
+        previewColor: '#457b9d'
+    },
+    {
+        id: 'taxi-rideshare',
+        name: 'Taxi & Transport',
+        industry: 'Transportation',
+        description: 'Local taxi and rideservice',
+        prompt: 'Local taxi service landing page with airport transfers, city rides, hourly charters, flat rates, booking options, fleet showcase, and corporate accounts',
+        suggestedStyle: 'Professional transportation',
+        previewColor: '#2d6a4f'
+    },
+    {
+        id: 'florist-flower',
+        name: 'Florist Shop',
+        industry: 'Retail',
+        description: 'Flower shop and delivery',
+        prompt: 'Florist landing page with flower arrangements, wedding flowers, event decor, same-day delivery, subscription service, and gift options',
+        suggestedStyle: 'Elegant floral',
+        previewColor: '#e9c46a'
+    },
+    {
+        id: 'jewelry-custom',
+        name: 'Jewelry Designer',
+        industry: 'Retail',
+        description: 'Custom jewelry and repairs',
+        prompt: 'Custom jewelry designer landing page with portfolio, custom design process, engagement rings, repairs, appraisal services, and consultation booking',
+        suggestedStyle: 'Luxury elegant',
+        previewColor: '#f4a261'
+    },
+    {
+        id: 'insurance-agent',
+        name: 'Insurance Agent',
+        industry: 'Finance',
+        description: 'Insurance brokerage',
+        prompt: 'Insurance agent landing page with coverage types (life, health, auto, home), quote comparison, claims assistance, client testimonials, and contact form',
+        suggestedStyle: 'Trustworthy professional',
+        previewColor: '#1b4965'
+    },
+    {
+        id: 'tutor-education',
+        name: 'Tutoring Services',
+        industry: 'Education',
+        description: 'Academic tutoring',
+        prompt: 'Tutoring service landing page with subjects, pricing, online/in-person options, success stories, free consultation, and booking system',
+        suggestedStyle: 'Friendly educational',
+        previewColor: '#8ecae6'
+    },
+    {
+        id: 'catering-events',
+        name: 'Catering Service',
+        industry: 'Food',
+        description: 'Event catering',
+        prompt: 'Catering service landing page with menu packages, wedding/corporate events, tasting sessions, service areas, gallery, and quote request',
+        suggestedStyle: 'Professional food service',
+        previewColor: '#bc6c25'
+    },
+    {
+        id: 'psychologist-therapy',
+        name: 'Therapy & Counseling',
+        industry: 'Healthcare',
+        description: 'Mental health services',
+        prompt: 'Therapist or psychologist landing page with specialties, treatment approaches, insurance info, first session details, online booking, and warm professional photos',
+        suggestedStyle: 'Calm and trustworthy',
+        previewColor: '#606c38'
+    },
+    {
+        id: 'optician-eye',
+        name: 'Optician',
+        industry: 'Healthcare',
+        description: 'Eye care and eyewear',
+        prompt: 'Optician landing page with eyewear collections, eye exams, contact lenses, lenses explained, brands carried, and appointment booking',
+        suggestedStyle: 'Professional clear',
+        previewColor: '#283618'
+    },
+    {
+        id: 'bankruptcy-law',
+        name: 'Debt Relief Attorney',
+        industry: 'Legal',
+        description: 'Bankruptcy and debt law',
+        prompt: 'Debt relief attorney landing page with bankruptcy options (Chapter 7/13), debt settlement, creditor defense, free consultation, and success stories',
+        suggestedStyle: 'Compassionate legal',
+        previewColor: '#370617'
     }
 ];
 

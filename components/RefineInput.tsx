@@ -2,7 +2,7 @@
  * RefineInput - Conversational refinement for artifacts
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { ArrowUpIcon, ThinkingIcon } from './Icons';
 
 interface RefineInputProps {
@@ -12,13 +12,25 @@ interface RefineInputProps {
     placeholder?: string;
 }
 
-export default function RefineInput({ isVisible, isRefining, onRefine, placeholder }: RefineInputProps) {
+export interface RefineInputHandle {
+    focusInput: () => void;
+}
+
+const RefineInput = forwardRef<RefineInputHandle, RefineInputProps>(function RefineInput(
+    { isVisible, isRefining, onRefine, placeholder },
+    ref
+) {
     const [value, setValue] = useState('');
     const inputRef = useRef<HTMLInputElement>(null);
+
+    useImperativeHandle(ref, () => ({
+        focusInput: () => {
+            inputRef.current?.focus();
+        }
+    }), []);
     
     useEffect(() => {
         if (isVisible && !isRefining && inputRef.current) {
-            // Small delay to allow animation to start
             setTimeout(() => inputRef.current?.focus(), 300);
         }
     }, [isVisible, isRefining]);
@@ -31,7 +43,8 @@ export default function RefineInput({ isVisible, isRefining, onRefine, placehold
     };
     
     const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' && !isRefining) {
+        // Ctrl+Enter or Cmd+Enter to submit
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
             e.preventDefault();
             handleSubmit();
         }
@@ -67,7 +80,8 @@ export default function RefineInput({ isVisible, isRefining, onRefine, placehold
                     </>
                 )}
             </div>
-            
         </div>
     );
-}
+});
+
+export default RefineInput;

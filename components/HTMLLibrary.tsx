@@ -3,6 +3,7 @@
  */
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { nanoid } from 'nanoid';
 import { HTMLItem, LibrarySortOption } from '../types';
 import * as library from '../lib/htmlLibrary';
 import { compileJSX } from '../lib/jsxCompiler';
@@ -129,7 +130,7 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem, onOpenSiteI
 
     const hasBatchItems = items.some(item => item.batchId);
 
-    const generateBatchId = () => Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
+    const generateBatchId = () => `${nanoid(9)}-${Date.now().toString(36)}`;
 
     const isJSXFile = (filename: string) => /\.(jsx|tsx|js|ts)$/i.test(filename);
     const isHTMLFile = (filename: string) => /\.(html|htm)$/i.test(filename);
@@ -576,7 +577,7 @@ export default function HTMLLibrary({ isOpen, onClose, onSelectItem, onOpenSiteI
                                             </div>
                                             {!isExpanded && (
                                                 <div className="batch-stacked-preview" onClick={() => toggleBatchExpanded(batchId)}>
-                                                    {batchItems.slice(0, 3).map((item, i) => (
+                                                    {batchItems.slice(0, 3).map((item) => (
                                                         <div key={item.id} className="batch-stack-card" />
                                                     ))}
                                                 </div>

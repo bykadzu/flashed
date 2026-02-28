@@ -176,8 +176,8 @@ export const prepareHtmlForPublishing = (
                             referrer: document.referrer,
                             userAgent: navigator.userAgent
                         })
-                    }).catch(() => {});
-                } catch(e) {}
+                    }).catch(function(err) { console.debug('Analytics track failed:', err); });
+                } catch(e) { console.debug('Analytics init failed:', e); }
             })();
         `;
         doc.body.appendChild(analyticsScript);
@@ -210,7 +210,22 @@ export const publishPage = async (
             .eq('short_id', shortId)
             .single();
         
-        const pageData: Record<string, any> = {
+        // Properly typed page data for Supabase
+        type PageData = {
+            short_id: string;
+            html: string;
+            seo_title: string;
+            seo_description: string;
+            og_image?: string;
+            form_settings?: FormSettings;
+            updated_at: string;
+            version: number;
+            user_id?: string;
+            project_id?: string;
+            batch_id?: string;
+        };
+
+        const pageData: PageData = {
             short_id: shortId,
             html: preparedHtml,
             seo_title: seo.title,

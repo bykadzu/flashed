@@ -5,7 +5,7 @@
 import React, { useState, useEffect } from 'react';
 import type { BrandKit } from '../types';
 import { generateId } from '../utils';
-import { XIcon, CheckIcon, PaletteIcon } from './Icons';
+import { XIcon, CheckIcon } from './Icons';
 
 interface BrandKitEditorProps {
     isOpen: boolean;

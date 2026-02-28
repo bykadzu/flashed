@@ -7,11 +7,11 @@
  * - Single source of truth
  */
 
-// Environment variables - accessed via Vite's import.meta.env or injected via define
+// Environment variables - accessed via Vite's import.meta.env or process.env (server-side builds)
 export const ENV = {
     // API Keys
-    OPENROUTER_API_KEY: (typeof process !== 'undefined' && process.env?.API_KEY)
-        || import.meta.env.VITE_OPENROUTER_API_KEY
+    OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY 
+        || import.meta.env.VITE_OPENROUTER_API_KEY 
         || '',
 
     // Supabase
@@ -78,7 +78,7 @@ export function getApiKey(): string {
     if (!key) {
         throw new Error(
             'OpenRouter API key not configured. ' +
-            'Please set OPENROUTER_API_KEY in your .env file. ' +
+            'Please set VITE_OPENROUTER_API_KEY in your .env file. ' +
             'Get your key at https://openrouter.ai/keys'
         );
     }

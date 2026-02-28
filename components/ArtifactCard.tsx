@@ -5,7 +5,7 @@
 */
 
 import React, { useEffect, useRef, useMemo, useState } from 'react';
-import { Artifact, Site, SitePage } from '../types';
+import { Artifact, Site } from '../types';
 import { GlobeIcon } from './Icons';
 import PageNavigator from './PageNavigator';
 
@@ -40,7 +40,7 @@ const ArtifactCard = React.memo(({
 
     // Get current content to display
     const currentPage = site?.pages.find(p => p.id === currentPageId);
-    const displayContent = site ? currentPage : artifact;
+    const _displayContent = site ? currentPage : artifact;
     const html = site ? currentPage?.html || '' : artifact?.html || '';
     const status = site ? currentPage?.status : artifact?.status;
     const id = site ? (currentPage?.id || site.id) : artifact?.id || '';
@@ -108,7 +108,7 @@ const ArtifactCard = React.memo(({
                             }
                         }
                         
-                        console.log('Link navigation prevented in preview:', href);
+                        // Link navigation handled - prevented in preview mode
                         return;
                     }
                     

@@ -5,7 +5,7 @@
 */
 
 import React, { useState, useCallback } from 'react';
-import Cropper, { Area, Point } from 'react-easy-crop';
+import Cropper, { Area } from 'react-easy-crop';
 import { getCroppedImg } from '../utils';
 import { XIcon, CheckIcon } from './Icons';
 
