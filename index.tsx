@@ -1547,7 +1547,7 @@ Return ONLY RAW HTML.
         const sitePages: SitePage[] = pages.map((pageName, i) => ({
             id: `${sessionId}_page_${i}`,
             name: pageName,
-            slug: slugify(pageName) || 'home',
+            slug: slugify(pageName) || (i === 0 ? 'home' : `page_${i}`),
             html: '',
             status: 'streaming' as const,
             isHome: i === 0
