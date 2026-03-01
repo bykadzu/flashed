@@ -83,3 +83,23 @@ export const updateItem = (id: string, updates: Partial<HTMLItem>): HTMLItem[] =
         return getLibrary();
     }
 };
+
+/**
+ * Create a new library item with generated fields
+ */
+export const createLibraryItem = (
+    content: string,
+    description: string,
+    title: string,
+    tags: string[] = []
+): HTMLItem => {
+    return {
+        id: nanoid(),
+        title,
+        description,
+        content,
+        createdAt: Date.now(),
+        tags,
+        size: new Blob([content]).size,
+    };
+};
