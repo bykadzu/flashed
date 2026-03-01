@@ -824,7 +824,7 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
             showError('Failed to generate variations. Please try again.');
         }
     } catch (e) {
-        showError((e instanceof Error ? e.message : String(e)) || 'Failed to generate variations');
+        showError(e instanceof Error ? e.message.includes('rate') ? 'Rate limit hit. Waiting a moment...' : `Variation failed: ${e.message}` : 'Failed to generate variations. Try simplifying your prompt or waiting a moment.');
     } finally {
         setIsLoading(false);
     }
@@ -907,7 +907,7 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
               });
               showSuccess(`Saved ${pages.length} site pages to library!`);
           } catch (e) {
-              showError((e instanceof Error ? e.message : String(e)) || 'Failed to save site to library');
+              showError(e instanceof Error ? e.message.includes('quota') ? 'Storage full. Try removing some saved sites.' : `Save failed: ${e.message}` : 'Failed to save. Try refreshing the page.');
           }
           return;
       }
@@ -1197,7 +1197,7 @@ Return ONLY the complete, updated HTML. No explanations or markdown code blocks.
           ));
           
       } catch (e) {
-          showError((e instanceof Error ? e.message : String(e)) || 'Failed to refine design. Please try again.');
+          showError(e instanceof Error ? e.message.includes('429') ? 'Too many requests. Taking a short break...' : `Refine failed: ${e.message}` : 'Refine failed. Try a shorter prompt or wait a moment.');
           // Restore original state on error
           setSessions(prev => prev.map((sess, i) => 
               i === currentSessionIndex ? {
@@ -1697,7 +1697,7 @@ Return ONLY RAW HTML.
             }
             
         } catch (e) {
-            showError((e instanceof Error ? e.message : String(e)) || 'Failed to generate site. Please try again.');
+            showError(e instanceof Error ? e.message.includes('401') ? 'API key issue. Check your settings.' : e.message.includes('rate') ? 'Rate limit hit. Waiting...' : `Generation failed: ${e.message}` : 'Generation failed. Try again or simplify your prompt.');
         } finally {
             setIsLoading(false);
             setPageStructure('');
@@ -1938,7 +1938,7 @@ Return ONLY RAW HTML.
         }
 
     } catch (e) {
-        showError((e instanceof Error ? e.message : String(e)) || 'Failed to generate designs. Please try again.');
+        showError(e instanceof Error ? e.message.includes('rate') ? 'Rate limit - taking a break...' : `Design generation failed: ${e.message}` : 'Design generation failed. Try fewer variations at once.');
     } finally {
         setIsLoading(false);
         setTimeout(() => inputRef.current?.focus(), FOCUS_DELAY);
