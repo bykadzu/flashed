@@ -228,8 +228,28 @@ export async function generateContent(apiKey: string, options: GenerateOptions):
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: { message: response.statusText } }));
-    throw new Error(error.error?.message || `OpenRouter error: ${response.status}`);
+    const errorData = await response.json().catch(() => ({ error: { message: response.statusText } }));
+    const errorMessage = errorData.error?.message || response.statusText;
+    
+    // User-friendly error messages based on status codes
+    let userMessage: string;
+    if (response.status === 401) {
+      userMessage = 'Invalid API key. Please check your OpenRouter API key in settings.';
+    } else if (response.status === 429) {
+      userMessage = 'Rate limit exceeded. Please wait a moment and try again.';
+    } else if (response.status === 503) {
+      userMessage = 'Service temporarily unavailable. Please try again in a few seconds.';
+    } else if (errorMessage.includes('timeout')) {
+      userMessage = 'Request timed out. Please try again.';
+    } else if (errorMessage.includes('credit')) {
+      userMessage = 'Insufficient credits. Please add credits to your OpenRouter account.';
+    } else if (errorMessage.includes('model')) {
+      userMessage = `Model error: ${errorMessage}. Try selecting a different model in settings.`;
+    } else {
+      userMessage = `Generation failed: ${errorMessage}`;
+    }
+    
+    throw new Error(userMessage);
   }
 
   const data = await response.json();
@@ -257,8 +277,28 @@ export async function* generateContentStream(apiKey: string, options: GenerateOp
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: { message: response.statusText } }));
-    throw new Error(error.error?.message || `OpenRouter error: ${response.status}`);
+    const errorData = await response.json().catch(() => ({ error: { message: response.statusText } }));
+    const errorMessage = errorData.error?.message || response.statusText;
+    
+    // User-friendly error messages based on status codes
+    let userMessage: string;
+    if (response.status === 401) {
+      userMessage = 'Invalid API key. Please check your OpenRouter API key in settings.';
+    } else if (response.status === 429) {
+      userMessage = 'Rate limit exceeded. Please wait a moment and try again.';
+    } else if (response.status === 503) {
+      userMessage = 'Service temporarily unavailable. Please try again in a few seconds.';
+    } else if (errorMessage.includes('timeout')) {
+      userMessage = 'Request timed out. Please try again.';
+    } else if (errorMessage.includes('credit')) {
+      userMessage = 'Insufficient credits. Please add credits to your OpenRouter account.';
+    } else if (errorMessage.includes('model')) {
+      userMessage = `Model error: ${errorMessage}. Try selecting a different model in settings.`;
+    } else {
+      userMessage = `Generation failed: ${errorMessage}`;
+    }
+    
+    throw new Error(userMessage);
   }
 
   const reader = response.body?.getReader();
