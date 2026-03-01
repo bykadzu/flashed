@@ -821,10 +821,10 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
 
         const successCount = results.filter(Boolean).length;
         if (successCount === 0) {
-            showError('Failed to generate variations. Please try again.');
+            showError('Could not generate variations. Try a shorter prompt or check your input.');
         }
     } catch (e) {
-        showError((e instanceof Error ? e.message : String(e)) || 'Failed to generate variations');
+        showError(e instanceof Error ? e.message : 'Could not generate variations. Please try again.');
     } finally {
         setIsLoading(false);
     }
@@ -907,7 +907,7 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
               });
               showSuccess(`Saved ${pages.length} site pages to library!`);
           } catch (e) {
-              showError((e instanceof Error ? e.message : String(e)) || 'Failed to save site to library');
+              showError(e instanceof Error ? e.message : 'Could not save to library. Please try again.');
           }
           return;
       }
@@ -925,7 +925,7 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
           htmlLibrary.saveItem(item);
           showSuccess('Saved to library!');
       } catch (e) {
-          showError((e instanceof Error ? e.message : String(e)) || 'Failed to save to library');
+          showError(e instanceof Error ? e.message : 'Could not save. Please try again.');
       }
   };
 
@@ -951,7 +951,7 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
           });
           showSuccess(`Saved ${completeArtifacts.length} variants to library!`);
       } catch (e) {
-          showError((e instanceof Error ? e.message : String(e)) || 'Failed to save batch to library');
+          showError(e instanceof Error ? e.message : 'Could not save batch. Please try again.');
       }
   };
 
@@ -1049,7 +1049,7 @@ Return ONLY the complete HTML. No explanations or markdown code blocks.
               setAbVariants(prev => [...prev, variant]);
           }
       } catch (e) {
-          showError((e instanceof Error ? e.message : String(e)) || 'Failed to generate A/B variant');
+          showError(e instanceof Error ? e.message : 'Could not create A/B variant. Please try again.');
       } finally {
           setIsABGenerating(false);
       }
@@ -1197,7 +1197,7 @@ Return ONLY the complete, updated HTML. No explanations or markdown code blocks.
           ));
           
       } catch (e) {
-          showError((e instanceof Error ? e.message : String(e)) || 'Failed to refine design. Please try again.');
+          showError(e instanceof Error ? e.message : 'Could not refine design. Please try again.');
           // Restore original state on error
           setSessions(prev => prev.map((sess, i) => 
               i === currentSessionIndex ? {
@@ -1503,7 +1503,7 @@ Return ONLY RAW HTML.
           
       } catch (e) {
           const errMsg = (e instanceof Error ? e.message : String(e));
-          showError(errMsg || 'Failed to add page. Please try again.');
+          showError(errMsg || 'Could not add page. Please try again.');
           setSessions(prev => prev.map(s => 
               s.id === sessionId && s.site ? {
                   ...s,
@@ -1697,7 +1697,7 @@ Return ONLY RAW HTML.
             }
             
         } catch (e) {
-            showError((e instanceof Error ? e.message : String(e)) || 'Failed to generate site. Please try again.');
+            showError(e instanceof Error ? e.message : 'Could not generate site. Please try again.');
         } finally {
             setIsLoading(false);
             setPageStructure('');
@@ -1919,7 +1919,7 @@ Return ONLY RAW HTML.
 
             } catch (e) {
                 const errMsg = (e instanceof Error ? e.message : String(e));
-                showError(`Failed to generate ${artifact.styleName} variation`);
+                showError(e instanceof Error ? e.message : `Could not generate ${artifact.styleName} variation. Please try again.`);
                 setSessions(prev => prev.map(sess =>
                     sess.id === sessionId ? {
                         ...sess,
@@ -1938,7 +1938,7 @@ Return ONLY RAW HTML.
         }
 
     } catch (e) {
-        showError((e instanceof Error ? e.message : String(e)) || 'Failed to generate designs. Please try again.');
+        showError(e instanceof Error ? e.message : 'Could not generate designs. Please try again.');
     } finally {
         setIsLoading(false);
         setTimeout(() => inputRef.current?.focus(), FOCUS_DELAY);
