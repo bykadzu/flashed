@@ -83,3 +83,25 @@ export const updateItem = (id: string, updates: Partial<HTMLItem>): HTMLItem[] =
         return getLibrary();
     }
 };
+
+/**
+ * Create a library item object without saving to storage
+ */
+export const createLibraryItem = (
+    content: string,
+    description: string = '',
+    title: string = '',
+    tags: string[] = []
+): HTMLItem => {
+    const size = new Blob([content]).size;
+    return {
+        id: nanoid(),
+        content,
+        title: title || `Item ${new Date().toLocaleDateString()}`,
+        description,
+        tags,
+        size,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+    };
+};
